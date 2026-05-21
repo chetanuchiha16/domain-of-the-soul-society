@@ -3,9 +3,8 @@ import sys
 import pygame
 import threading
 import time
+import config
 
-
-    
 pygame.mixer.init()
 
 def dialogue(*args):
@@ -29,16 +28,16 @@ def dialogue(*args):
     audiothread.join()
 
 def loose_to_sukuna():
-    dialogue('audiofiles/standproud.mp3', "Stand Pround you are strong")
+    dialogue(config.AUDIO_PATHS["loose"], "Stand Proud you are strong")
 
 def welcome():
-    dialogue('audiofiles/Aizen.mp3', "yokoso watashi no soul society ye")
+    dialogue(config.AUDIO_PATHS["welcome"], "yokoso watashi no soul society ye")
 
 def gojo():
-    dialogue('audiofiles/gojo_says_youre_weak.mp3', 'Daijoubu desho datte kimi yowai mo')
+    dialogue(config.AUDIO_PATHS["gojo"], 'Daijoubu desho datte kimi yowai mo')
 
 def shunsui():
-    dialogue('audiofiles/bankai-katen-kyokotsu.mp3', 'Bankai Katen Kyōkotsu: Karamatsu Shinjū')
+    dialogue(config.AUDIO_PATHS["shunsui"], 'Bankai Katen Kyōkotsu: Karamatsu Shinjū')
 
 
 def message(message):
@@ -50,7 +49,8 @@ def message(message):
 
 
 def gojo_vs_sukuna():
-    songpath = 'audiofiles/judas-(sukuna-vs-gojo).mp3'
+    songpath = config.AUDIO_PATHS["fight"]
+
     pygame.mixer.music.load(songpath)
     audio = MP3(songpath)
     audiolength = audio.info.length 
