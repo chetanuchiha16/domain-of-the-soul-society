@@ -1,0 +1,13 @@
+[project]
+name = "domain-of-the-soul-society"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pygame>=2.5.0",
+    "mutagen>=1.47.0",
+    "colorama>=0.4.6",
+    "pyttsx3>=2.90"
+]
+
