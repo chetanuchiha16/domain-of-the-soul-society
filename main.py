@@ -1,44 +1,7 @@
 from dialogue import *
 import random
 from colorama import Fore
-
-class Player:
-
-    def __init__(self):
-        self.inventory = []
-        self.summons = []
-        self._hp = 100
-        self._attack_power = 50
-
-    @property
-    def hp(self):
-        return self._hp
-    
-    @hp.setter
-    def hp(self, new_hp):
-        if new_hp > 100:
-            self._hp = 100
-        elif new_hp < 0:
-            self._hp = 0
-        else:
-            self._hp = new_hp
-
-    @property
-    def attack_power(self):
-        return self._attack_power
-    
-    @attack_power.setter
-    def attack_power(self, new_attack_power):
-        if new_attack_power > 100:
-            self._attack_power = 100
-        elif new_attack_power < 0:
-            self._attack_power = 0
-        else:
-            self._attack_power = new_attack_power
-
-    def stats(self):
-
-        print(f"HP: {self.hp:>18}\nInventory:          {self.inventory}\nAttack Power{self.attack_power:>10}")
+from models import Player
 
 
 class Dungeon:
