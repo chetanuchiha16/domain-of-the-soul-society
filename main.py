@@ -1,7 +1,7 @@
 from dialogue import *
 import random
 from colorama import Fore
-from models import Player
+from models import Player, Weapon, Armor
 
 
 class Dungeon:
@@ -31,13 +31,17 @@ def game():
                 random.shuffle(dungeon.findings)
                 found = dungeon.findings.pop() if dungeon.findings else message("Dungeon is empty")
                 if found == '⚔':
-                    player.attack_power += random.randint(1,10)
-                    player.inventory.append(found)
+                    atk_bonus = random.randint(5, 15)
+                    item = Weapon("Zanpakuto", "A soul-cutter sword", attack_bonus=atk_bonus)
+                    player.add_item(item)
+                    player.equip(item)
                     print(dungeon.findings)
                     
                 elif found == '🛡':
-                    player.attack_power -= random.randint(1,10)
-                    player.inventory.append(found)
+                    def_bonus = random.randint(3, 8)
+                    item = Armor("Shinobi Shozoku", "Traditional stealth armor", defense_bonus=def_bonus)
+                    player.add_item(item)
+                    player.equip(item)
                     print(dungeon.findings)
                     
                 elif found == 'gojo':

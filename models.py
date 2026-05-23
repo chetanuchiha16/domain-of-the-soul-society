@@ -61,6 +61,46 @@ class Entity:
         return actual_damage
 
 
+class Item:
+    def __init__(self, name, description, item_type, value=0):
+        self.name = name
+        self.description = description
+        self.item_type = item_type  # "weapon", "armor", "consumable"
+        self.value = value
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
+
+class Weapon(Item):
+    def __init__(self, name, description, attack_bonus, value=0):
+        super().__init__(name, description, "weapon", value)
+        self.attack_bonus = attack_bonus
+
+
+class Armor(Item):
+    def __init__(self, name, description, defense_bonus, value=0):
+        super().__init__(name, description, "armor", value)
+        self.defense_bonus = defense_bonus
+
+
+class Consumable(Item):
+    def __init__(self, name, description, heal_hp=0, restore_energy=0, value=0):
+        super().__init__(name, description, "consumable", value)
+        self.heal_hp = heal_hp
+        self.restore_energy = restore_energy
+
+    def use(self, target):
+        if self.heal_hp > 0:
+            target.hp += self.heal_hp
+        if self.restore_energy > 0:
+            target.energy += self.restore_energy
+        return True
+
+
 class Player(Entity):
     def __init__(self, name="Hero", hp=100, attack_power=50):
         super().__init__(name, hp, attack_power)
@@ -69,20 +109,64 @@ class Player(Entity):
         self.gold = 0
         self.inventory = []
         self.summons = []
+        self.equipped_weapon = None
+        self.equipped_armor = None
+
+    @property
+    def attack_power(self):
+        bonus = self.equipped_weapon.attack_bonus if self.equipped_weapon else 0
+        return self._attack_power + bonus
+
+    @attack_power.setter
+    def attack_power(self, val):
+        self._attack_power = max(0, val)
+
+    def take_damage(self, amount):
+        defense = self.equipped_armor.defense_bonus if self.equipped_armor else 0
+        actual_damage = max(0, amount - defense)
+        self.hp -= actual_damage
+        return actual_damage
+
+    def add_item(self, item):
+        self.inventory.append(item)
+
+    def equip(self, item):
+        if item.item_type == "weapon":
+            self.equipped_weapon = item
+        elif item.item_type == "armor":
+            self.equipped_armor = item
+
+    def use_item(self, item_name):
+        for idx, item in enumerate(self.inventory):
+            if item.name.lower() == item_name.lower():
+                if isinstance(item, Consumable):
+                    item.use(self)
+                    self.inventory.pop(idx)
+                    return True
+                elif isinstance(item, (Weapon, Armor)):
+                    self.equip(item)
+                    return True
+        return False
 
     def stats(self):
-        print(f"HP: {self.hp:>18}\nInventory:          {self.inventory}\nAttack Power{self.attack_power:>10}")
+        weapon_name = self.equipped_weapon.name if self.equipped_weapon else "None"
+        armor_name = self.equipped_armor.name if self.equipped_armor else "None"
+        print(f"HP: {self.hp}/{self.max_hp:>18}\nInventory:          {self.inventory}\nAttack Power: {self.attack_power:>10} (Weapon: {weapon_name})\nArmor: {armor_name}")
 
     def get_stats_summary(self):
+        weapon_name = self.equipped_weapon.name if self.equipped_weapon else "None"
+        armor_name = self.equipped_armor.name if self.equipped_armor else "None"
         return (
             f"--- {self.name} (LVL {self.level}) ---\n"
             f"HP: {self.hp}/{self.max_hp}\n"
             f"Energy: {self.energy}/{self.max_energy}\n"
-            f"Attack Power: {self.attack_power}\n"
+            f"Attack Power: {self.attack_power} (Weapon: {weapon_name})\n"
+            f"Armor: {armor_name}\n"
             f"Gold: {self.gold} | XP: {self.xp}\n"
-            f"Inventory: {self.inventory}\n"
+            f"Inventory: {[item.name for item in self.inventory]}\n"
             f"Summons: {[s for s in self.summons]}\n"
         )
+
 
 
 class Enemy(Entity):
