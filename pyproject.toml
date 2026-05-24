@@ -8,6 +8,9 @@ dependencies = [
     "pygame>=2.5.0",
     "mutagen>=1.47.0",
     "colorama>=0.4.6",
-    "pyttsx3>=2.90"
+    "pyttsx3>=2.90",
+    "fastapi>=0.110.0",
+    "uvicorn>=0.28.0"
 ]
+
 
