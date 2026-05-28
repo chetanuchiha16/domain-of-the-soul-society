@@ -151,6 +151,38 @@ def explore_dungeon():
     
     return {"found": found, "log": log_msg, "state": get_state()}
 
+
+import json
+import os
+
+SAVE_FILE = "savegame.json"
+
+@app.post("/api/game/save")
+def save_game():
+    data = {
+        "player": state.player.to_dict(),
+        "combat_log": state.combat_log
+    }
+    with open(SAVE_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+    return {"message": "Game saved successfully"}
+
+@app.post("/api/game/load")
+def load_game():
+    if not os.path.exists(SAVE_FILE):
+        raise HTTPException(status_code=404, detail="Save file not found")
+    try:
+        with open(SAVE_FILE, "r") as f:
+            data = json.load(f)
+        state.player = Player.from_dict(data["player"])
+        state.combat_log = data.get("combat_log", [])
+        state.current_enemies = []
+        return {"message": "Game loaded successfully", "state": get_state()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error loading game: {str(e)}")
+
+
 if __name__ == "__main__":
+
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

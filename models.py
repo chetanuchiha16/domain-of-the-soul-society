@@ -74,6 +74,33 @@ class Item:
     def __repr__(self):
         return self.name
 
+    def to_dict(self):
+        data = {
+            "name": self.name,
+            "description": self.description,
+            "item_type": self.item_type,
+            "value": self.value
+        }
+        if isinstance(self, Weapon):
+            data["attack_bonus"] = self.attack_bonus
+        elif isinstance(self, Armor):
+            data["defense_bonus"] = self.defense_bonus
+        elif isinstance(self, Consumable):
+            data["heal_hp"] = self.heal_hp
+            data["restore_energy"] = self.restore_energy
+        return data
+
+    @classmethod
+    def from_dict(cls, data):
+        t = data.get("item_type")
+        if t == "weapon":
+            return Weapon(data["name"], data["description"], data["attack_bonus"], data.get("value", 0))
+        elif t == "armor":
+            return Armor(data["name"], data["description"], data["defense_bonus"], data.get("value", 0))
+        elif t == "consumable":
+            return Consumable(data["name"], data["description"], data.get("heal_hp", 0), data.get("restore_energy", 0), data.get("value", 0))
+        return Item(data["name"], data["description"], t, data.get("value", 0))
+
 
 class Weapon(Item):
     def __init__(self, name, description, attack_bonus, value=0):
@@ -111,6 +138,44 @@ class Player(Entity):
         self.summons = []
         self.equipped_weapon = None
         self.equipped_armor = None
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "hp": self.hp,
+            "max_hp": self.max_hp,
+            "attack_power": self._attack_power,
+            "energy": self.energy,
+            "max_energy": self.max_energy,
+            "level": self.level,
+            "xp": self.xp,
+            "gold": self.gold,
+            "inventory": [item.to_dict() for item in self.inventory],
+            "summons": self.summons,
+            "equipped_weapon": self.equipped_weapon.to_dict() if self.equipped_weapon else None,
+            "equipped_armor": self.equipped_armor.to_dict() if self.equipped_armor else None
+        }
+
+    @classmethod
+    def from_dict(cls, data):
+        p = Player(data["name"], data["max_hp"], data["attack_power"])
+        p.hp = data["hp"]
+        p.max_energy = data["max_energy"]
+        p.energy = data["energy"]
+        p.level = data["level"]
+        p.xp = data["xp"]
+        p.gold = data["gold"]
+        p.summons = data.get("summons", [])
+        p.inventory = [Item.from_dict(item_data) for item_data in data.get("inventory", [])]
+        
+        eq_w = data.get("equipped_weapon")
+        if eq_w:
+            p.equipped_weapon = Item.from_dict(eq_w)
+        eq_a = data.get("equipped_armor")
+        if eq_a:
+            p.equipped_armor = Item.from_dict(eq_a)
+        return p
+
 
     @property
     def attack_power(self):
