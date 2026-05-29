@@ -1,0 +1,377 @@
+import { useState, useEffect } from 'react'
+
+const API_BASE = 'http://localhost:8000/api'
+
+interface ItemInfo {
+  name: string;
+  description: string;
+  item_type: 'weapon' | 'armor' | 'consumable';
+  value: number;
+  attack_bonus?: number;
+  defense_bonus?: number;
+  heal_hp?: number;
+  restore_energy?: number;
+}
+
+interface PlayerState {
+  name: string;
+  hp: number;
+  max_hp: number;
+  attack_power: number;
+  base_attack_power: number;
+  energy: number;
+  max_energy: number;
+  level: number;
+  xp: number;
+  gold: number;
+  inventory: ItemInfo[];
+  summons: string[];
+  equipped_weapon: ItemInfo | null;
+  equipped_armor: ItemInfo | null;
+}
+
+interface GameStateData {
+  player: PlayerState;
+  combat: {
+    enemies: Array<{
+      name: string;
+      hp: number;
+      max_hp: number;
+      attack_power: number;
+      xp_reward: number;
+      gold_reward: number;
+    }>;
+    log: string[];
+  };
+}
+
+function App() {
+  const [gameState, setGameState] = useState<GameStateData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [logs, setLogs] = useState<string[]>(["Connecting to Soul Society backend..."])
+
+  const addLog = (msg: string) => {
+    setLogs(prev => [msg, ...prev].slice(0, 50))
+  }
+
+  const fetchState = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/state`)
+      if (!res.ok) throw new Error("Server error")
+      const data = await res.json() as GameStateData
+      setGameState(data)
+      setError(null)
+    } catch (err) {
+      console.error(err)
+      setError("Unable to connect to game server. Make sure the FastAPI backend is running on port 8000.")
+    } finally {
+      setLoading(false)
+    }
+  };
+
+  useEffect(() => {
+    fetchState()
+    const timer = setInterval(fetchState, 5000) // Poll every 5s
+    return () => clearInterval(timer)
+  }, [])
+
+  const handleAction = async (endpoint: string, body = {}, successMsg: string | null = null) => {
+    try {
+      const res = await fetch(`${API_BASE}/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
+      if (!res.ok) {
+        const errData = await res.json() as { detail?: string }
+        throw new Error(errData.detail || "Action failed")
+      }
+      const data = await res.json() as { state?: GameStateData; log?: string; message?: string }
+      if (data.state) {
+        setGameState(data.state)
+      } else {
+        await fetchState()
+      }
+      if (successMsg) addLog(successMsg)
+      else if (data.log) addLog(data.log)
+      else if (data.message) addLog(data.message)
+    } catch (err) {
+      if (err instanceof Error) {
+        addLog(`Error: ${err.message}`)
+      } else {
+        addLog('An unknown error occurred')
+      }
+    }
+  }
+
+  const exploreDungeon = () => handleAction('explore/dungeon')
+  const saveGame = () => handleAction('game/save', {}, "Game saved successfully.")
+  const loadGame = () => handleAction('game/load', {}, "Game loaded successfully.")
+
+  const resetPlayer = async () => {
+    const name = prompt("Enter a name for your soul reaper:", gameState?.player?.name || "Ichigo")
+    if (name) {
+      try {
+        const res = await fetch(`${API_BASE}/player/reset?name=${encodeURIComponent(name)}`, {
+          method: 'POST'
+        })
+        const data = await res.json() as GameStateData
+        setGameState(data)
+        addLog(`Re-entered the Soul Society as ${name}!`)
+      } catch (err) {
+        if (err instanceof Error) {
+          addLog(`Reset failed: ${err.message}`)
+        }
+      }
+    }
+  }
+
+  const useItem = (itemName: string, type: 'weapon' | 'armor' | 'consumable') => {
+    if (type === 'consumable') {
+      handleAction('player/use', { item_name: itemName })
+    } else {
+      handleAction('player/equip', { item_name: itemName })
+    }
+  }
+
+  if (loading && !gameState) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        <div className="text-neon-cyan font-mono text-xl tracking-widest mb-5 animate-pulse">Syncing Soul Energy...</div>
+        <div className="w-12 h-12 border-4 border-neon-cyan/20 border-t-neon-cyan rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (error && !gameState) {
+    return (
+      <div className="max-w-[600px] mx-auto mt-24 p-8 text-center bg-bg-panel/45 backdrop-blur-md border border-red-500/20 rounded-xl shadow-2xl">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">Server Connection Offline</h2>
+        <p className="text-gray-400 mb-6 leading-relaxed">{error}</p>
+        <div className="bg-black/30 p-4 rounded-lg font-mono text-sm text-left mb-6 text-gray-300 border border-white/5">
+          # Start the backend server:<br/>
+          cd /home/chetan/Documents/Hinaverse/domain-of-the-soul-society<br/>
+          /home/chetan/Documents/Hinaverse/.venv/bin/uvicorn app:app --reload
+        </div>
+        <button 
+          className="bg-gradient-to-br from-neon-magenta to-neon-purple text-white border-0 rounded-lg py-3 px-6 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)] transition-all duration-200" 
+          onClick={fetchState}
+        >
+          Retry Connection
+        </button>
+      </div>
+    )
+  }
+
+  if (!gameState || !gameState.player) return null
+
+  const { player } = gameState
+  const hpPct = (player.hp / player.max_hp) * 100
+  const energyPct = (player.energy / player.max_energy) * 100
+  const xpPct = (player.xp / (player.level * 100)) * 100
+
+  return (
+    <div className="max-w-[1200px] w-full mx-auto p-5 box-border">
+      <header className="mb-7 text-center border-b-2 border-neon-cyan/20 pb-5">
+        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-widest text-white [text-shadow:0_0_10px_rgba(102,252,241,0.3),0_0_20px_rgba(255,0,127,0.2)] my-2">
+          Domain of the Soul Society
+        </h1>
+        <div className="text-neon-cyan font-mono text-sm tracking-wider">
+          Soul Reaper Status Management Terminal v1.3.0 (TypeScript + TailwindCSS v4)
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_1.2fr] gap-6 mb-7">
+        {/* Left Column: Player Stats */}
+        <section className="bg-bg-panel/45 backdrop-blur-md border border-neon-cyan/20 rounded-xl p-5 shadow-2xl transition-all duration-300 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]">
+          <h2 className="text-xl font-bold text-white border-l-4 border-neon-cyan pl-3 mb-5 uppercase tracking-wider">
+            Soul Status
+          </h2>
+          
+          <div className="flex justify-between items-baseline mb-4">
+            <span className="text-2xl font-bold text-white">{player.name}</span>
+            <span className="text-neon-cyan font-mono text-sm tracking-wide">RANK: Soul Reaper (LVL {player.level})</span>
+          </div>
+
+          {/* HP Bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
+              <span>HP</span>
+              <span>{player.hp} / {player.max_hp}</span>
+            </div>
+            <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-red-800 to-hp-color shadow-[0_0_8px_rgba(255,62,62,0.5)] transition-all duration-300" 
+                style={{ width: `${hpPct}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Energy Bar */}
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
+              <span>Reiryoku (Energy)</span>
+              <span>{player.energy} / {player.max_energy}</span>
+            </div>
+            <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-cyan-800 to-energy-color shadow-[0_0_8px_rgba(0,188,212,0.5)] transition-all duration-300" 
+                style={{ width: `${energyPct}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* XP Bar */}
+          <div className="mb-5">
+            <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
+              <span>XP ({Math.round(xpPct)}%)</span>
+              <span>{player.xp} / {player.level * 100}</span>
+            </div>
+            <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-green-800 to-xp-color shadow-[0_0_8px_rgba(139,195,74,0.5)] transition-all duration-300" 
+                style={{ width: `${xpPct}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* Attributes */}
+          <div className="grid grid-cols-2 gap-4 mt-5">
+            <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-neon-cyan">{player.attack_power}</div>
+              <div className="text-[10px] uppercase text-gray-500 mt-1">Attack Power</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-neon-cyan">{player.gold}</div>
+              <div className="text-[10px] uppercase text-gray-500 mt-1">Gold Coins</div>
+            </div>
+          </div>
+
+          {/* Summon Seals */}
+          <div className="mt-5 text-left">
+            <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Active Summon Seals</span>
+            <div className="flex flex-wrap gap-2.5 mt-2">
+              {player.summons.length > 0 ? (
+                player.summons.map((s, idx) => (
+                  <span key={idx} className="bg-neon-cyan/10 border border-neon-cyan/20 rounded px-2 py-1 text-xs text-neon-cyan capitalize">
+                    🔮 {s}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-gray-600 italic">No active seals in inventory.</span>
+              )}
+            </div>
+          </div>
+
+          {/* Equipped Gear */}
+          <div className="mt-6 border-t border-neon-cyan/20 pt-5">
+            <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider block text-left mb-2.5">Equipped Gear</span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className={`p-3 flex items-center gap-3 rounded-lg border transition-all ${player.equipped_weapon ? 'bg-neon-cyan/5 border-neon-cyan/30' : 'bg-violet-500/5 border-dashed border-violet-500/30'}`}>
+                <div className="text-3xl">⚔️</div>
+                <div className="text-left">
+                  <div className="text-[10px] uppercase text-gray-500">Weapon</div>
+                  <div className="font-bold text-white text-sm">{player.equipped_weapon ? player.equipped_weapon.name : 'None'}</div>
+                  {player.equipped_weapon && <div className="text-[10px] text-neon-cyan">+{player.equipped_weapon.attack_bonus} ATK</div>}
+                </div>
+              </div>
+
+              <div className={`p-3 flex items-center gap-3 rounded-lg border transition-all ${player.equipped_armor ? 'bg-neon-cyan/5 border-neon-cyan/30' : 'bg-violet-500/5 border-dashed border-violet-500/30'}`}>
+                <div className="text-3xl">🛡️</div>
+                <div className="text-left">
+                  <div className="text-[10px] uppercase text-gray-500">Armor</div>
+                  <div className="font-bold text-white text-sm">{player.equipped_armor ? player.equipped_armor.name : 'None'}</div>
+                  {player.equipped_armor && <div className="text-[10px] text-neon-cyan">+{player.equipped_armor.defense_bonus} DEF</div>}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Right Column: Inventory & Exploration Log */}
+        <section className="bg-bg-panel/45 backdrop-blur-md border border-neon-cyan/20 rounded-xl p-5 shadow-2xl flex flex-col justify-between transition-all duration-300 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]">
+          <div>
+            <h2 className="text-xl font-bold text-white border-l-4 border-neon-cyan pl-3 mb-5 uppercase tracking-wider">
+              Inventory & Commands
+            </h2>
+
+            {/* Inventory Items list */}
+            <div className="mb-5">
+              <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider block text-left mb-2.5">Carried Items</span>
+              {player.inventory.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 max-h-[350px] overflow-y-auto pr-1">
+                  {player.inventory.map((item, idx) => (
+                    <div 
+                      key={idx} 
+                      className="bg-white/5 border border-white/10 rounded-lg p-3 text-center flex flex-col justify-between min-h-[110px] cursor-pointer transition-all duration-200 hover:bg-neon-cyan/5 hover:border-neon-cyan/30 hover:-translate-y-0.5" 
+                      onClick={() => useItem(item.name, item.item_type)}
+                    >
+                      <div>
+                        <div className="text-2xl mb-1.5">
+                          {item.item_type === 'weapon' ? '⚔️' : item.item_type === 'armor' ? '🛡️' : '🧪'}
+                        </div>
+                        <div className="font-bold text-xs text-white mb-1 truncate">{item.name}</div>
+                      </div>
+                      <div className="text-[10px] uppercase text-gray-500">
+                        {item.item_type === 'weapon' ? `+${item.attack_bonus} ATK` : item.item_type === 'armor' ? `+${item.defense_bonus} DEF` : 'Restore HP'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-10 text-center border border-dashed border-white/5 rounded-lg text-gray-600 italic">
+                  Inventory is empty. Explore the dungeon to find items!
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            {/* Log Panel */}
+            <div className="bg-black/40 border border-white/5 rounded-lg p-4 font-mono text-sm text-cyan-200 h-[200px] overflow-y-auto mb-5 shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] text-left">
+              {logs.map((log, idx) => (
+                <div key={idx} className="mb-1.5 leading-relaxed">
+                  <span className="text-neon-cyan mr-1.5">&gt;</span>{log}
+                </div>
+              ))}
+            </div>
+
+            {/* Control Actions */}
+            <div className="flex gap-4 mb-4">
+              <button 
+                className="flex-1 bg-gradient-to-br from-neon-magenta to-neon-purple text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)] transition-all duration-200" 
+                onClick={exploreDungeon}
+              >
+                Explore Dungeon
+              </button>
+              <button 
+                className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2.5 px-4 cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
+                onClick={resetPlayer}
+              >
+                Reset Character
+              </button>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button 
+                className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2 px-3 text-xs cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
+                onClick={saveGame}
+              >
+                Save Game
+              </button>
+              <button 
+                className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2 px-3 text-xs cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
+                onClick={loadGame}
+              >
+                Load Game
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  )
+}
+
+export default App
