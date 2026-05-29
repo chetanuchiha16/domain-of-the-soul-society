@@ -3,7 +3,7 @@ name = "domain-of-the-soul-society"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "pygame>=2.5.0",
     "mutagen>=1.47.0",
