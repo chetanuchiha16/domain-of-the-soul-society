@@ -138,6 +138,7 @@ class Player(Entity):
         self.summons = []
         self.equipped_weapon = None
         self.equipped_armor = None
+        self.current_location = "Shibuya Station"
 
     def to_dict(self):
         return {
@@ -153,7 +154,8 @@ class Player(Entity):
             "inventory": [item.to_dict() for item in self.inventory],
             "summons": self.summons,
             "equipped_weapon": self.equipped_weapon.to_dict() if self.equipped_weapon else None,
-            "equipped_armor": self.equipped_armor.to_dict() if self.equipped_armor else None
+            "equipped_armor": self.equipped_armor.to_dict() if self.equipped_armor else None,
+            "current_location": self.current_location
         }
 
     @classmethod
@@ -167,6 +169,7 @@ class Player(Entity):
         p.gold = data["gold"]
         p.summons = data.get("summons", [])
         p.inventory = [Item.from_dict(item_data) for item_data in data.get("inventory", [])]
+        p.current_location = data.get("current_location", "Shibuya Station")
         
         eq_w = data.get("equipped_weapon")
         if eq_w:
@@ -233,7 +236,6 @@ class Player(Entity):
         )
 
 
-
 class Enemy(Entity):
     def __init__(self, name, hp, attack_power, xp_reward=10, gold_reward=5):
         super().__init__(name, hp, attack_power)
@@ -242,4 +244,25 @@ class Enemy(Entity):
 
     def get_stats_summary(self):
         return f"{self.name} - HP: {self.hp}/{self.max_hp} | ATK: {self.attack_power}"
+
+
+class Location:
+    def __init__(self, name, description, region, x, y, connections=None):
+        self.name = name
+        self.description = description
+        self.region = region
+        self.x = x
+        self.y = y
+        self.connections = connections or []
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "region": self.region,
+            "x": self.x,
+            "y": self.y,
+            "connections": self.connections
+        }
+
 

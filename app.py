@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import random
 
-from models import Player, Weapon, Armor, Consumable, Enemy
+from models import Player, Weapon, Armor, Consumable, Enemy, Location
 
 app = FastAPI(title="Domain of the Soul Society API", version="1.0.0")
 
@@ -180,6 +180,38 @@ def load_game():
         return {"message": "Game loaded successfully", "state": get_state()}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error loading game: {str(e)}")
+
+locations_db = {
+    "Shibuya Station": Location("Shibuya Station", "The bustling intersection of Tokyo, now empty and haunted by curses.", "Shibuya", 20, 30, ["Graveyard", "Cursed Site"]),
+    "Graveyard": Location("Graveyard", "A dark graveyard where hollows and curses feed on residual spiritual energy.", "Shibuya", 15, 65, ["Shibuya Station", "Alleys"]),
+    "Cursed Site": Location("Cursed Site", "An active cursed area. You can feel Sukuna's energy lingering here.", "Shibuya", 45, 40, ["Shibuya Station", "Alleys"]),
+    "Alleys": Location("Alleys", "Narrow dark alleys. High probability of low-tier curses spawning.", "Shibuya", 30, 80, ["Graveyard", "Cursed Site"]),
+}
+
+class MoveRequest(BaseModel):
+    destination: str
+
+@app.get("/api/map")
+def get_map():
+    return {name: loc.to_dict() for name, loc in locations_db.items()}
+
+@app.post("/api/player/move")
+def move_player(req: MoveRequest):
+    p = state.player
+    dest = req.destination
+    if dest not in locations_db:
+        raise HTTPException(status_code=404, detail="Location not found")
+    
+    current_loc = locations_db.get(p.current_location)
+    if not current_loc:
+        p.current_location = dest
+        return {"message": f"Moved to {dest}", "state": get_state()}
+    
+    if dest not in current_loc.connections and dest != p.current_location:
+        raise HTTPException(status_code=400, detail=f"Cannot move to {dest} from {p.current_location}")
+        
+    p.current_location = dest
+    return {"message": f"Moved to {dest}", "state": get_state()}
 
 
 if __name__ == "__main__":
