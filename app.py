@@ -81,7 +81,8 @@ def get_state():
             "inventory": inventory_info,
             "summons": p.summons,
             "equipped_weapon": weapon_info,
-            "equipped_armor": armor_info
+            "equipped_armor": armor_info,
+            "current_location": p.current_location
         },
         "combat": {
             "enemies": [
@@ -124,6 +125,8 @@ def use_item(req: UseItemRequest):
 
 @app.post("/api/explore/dungeon")
 def explore_dungeon():
+    if state.current_enemies:
+        raise HTTPException(status_code=400, detail="Cannot explore while engaged in combat!")
     findings = ["⚔", "🛡", "gojo", "shunsui", "health_potion"]
     found = random.choice(findings)
     p = state.player
@@ -197,6 +200,9 @@ def get_map():
 
 @app.post("/api/player/move")
 def move_player(req: MoveRequest):
+    if state.current_enemies:
+        raise HTTPException(status_code=400, detail="Cannot move while engaged in combat!")
+        
     p = state.player
     dest = req.destination
     if dest not in locations_db:
@@ -211,7 +217,125 @@ def move_player(req: MoveRequest):
         raise HTTPException(status_code=400, detail=f"Cannot move to {dest} from {p.current_location}")
         
     p.current_location = dest
-    return {"message": f"Moved to {dest}", "state": get_state()}
+    log_msg = f"Navigated to {dest}."
+    
+    # Roll for encounter based on destination
+    encounter_rates = {
+        "Shibuya Station": 0.20,
+        "Graveyard": 0.60,
+        "Cursed Site": 0.70,
+        "Alleys": 0.50
+    }
+    
+    rate = encounter_rates.get(dest, 0.30)
+    if random.random() < rate:
+        # Spawn location specific enemy
+        enemy_pool = {
+            "Shibuya Station": [
+                {"name": "Fly Head Curse", "hp": 30, "atk": 6, "xp": 20, "gold": 10}
+            ],
+            "Graveyard": [
+                {"name": "Gillian Hollow", "hp": 90, "atk": 16, "xp": 50, "gold": 25},
+                {"name": "Demi-Hollow", "hp": 40, "atk": 8, "xp": 25, "gold": 12}
+            ],
+            "Cursed Site": [
+                {"name": "Sukuna Fragment Guard", "hp": 80, "atk": 14, "xp": 45, "gold": 20},
+                {"name": "Cursed Swarm", "hp": 50, "atk": 10, "xp": 30, "gold": 15}
+            ],
+            "Alleys": [
+                {"name": "Low-grade Curse", "hp": 35, "atk": 7, "xp": 20, "gold": 8}
+            ]
+        }
+        
+        pool = enemy_pool.get(dest, [{"name": "Stray Hollow", "hp": 45, "atk": 9, "xp": 25, "gold": 10}])
+        chosen = random.choice(pool)
+        
+        enemy = Enemy(
+            name=chosen["name"],
+            hp=chosen["hp"],
+            attack_power=chosen["atk"],
+            xp_reward=chosen["xp"],
+            gold_reward=chosen["gold"]
+        )
+        state.current_enemies = [enemy]
+        encounter_log = f"WARNING! Encounted a wild {enemy.name} in {dest}!"
+        state.combat_log = [encounter_log] + state.combat_log
+        log_msg = f"Moved to {dest}. {encounter_log}"
+        
+    return {"message": log_msg, "state": get_state()}
+
+@app.post("/api/combat/attack")
+def combat_attack():
+    if not state.current_enemies:
+        raise HTTPException(status_code=400, detail="No active combat.")
+    
+    enemy = state.current_enemies[0]
+    p = state.player
+    
+    # Player attacks enemy
+    p_dmg = p.attack_power
+    enemy.hp -= p_dmg
+    log = [f"{p.name} slashed {enemy.name} for {p_dmg} damage!"]
+    
+    if enemy.hp <= 0:
+        log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
+        p.xp += enemy.xp_reward
+        p.gold += enemy.gold_reward
+        # Level up check
+        if p.xp >= p.level * 100:
+            p.xp -= p.level * 100
+            p.level += 1
+            p.max_hp += 20
+            p.hp = p.max_hp
+            log.append(f"LEVEL UP! Reached level {p.level}!")
+        state.current_enemies = []
+    else:
+        # Enemy counter attacks
+        e_dmg = enemy.attack_power
+        actual_dmg = p.take_damage(e_dmg)
+        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
+        if p.hp <= 0:
+            p.hp = 0
+            log.append("You have been defeated! Respawning at Shibuya Station.")
+            p.current_location = "Shibuya Station"
+            p.hp = p.max_hp // 2
+            state.current_enemies = []
+            
+    state.combat_log = log + state.combat_log
+    return {"message": "Attack executed", "state": get_state()}
+
+@app.post("/api/combat/run")
+def combat_run():
+    if not state.current_enemies:
+        raise HTTPException(status_code=400, detail="No active combat.")
+    
+    enemy = state.current_enemies[0]
+    p = state.player
+    
+    # 50% chance to run away successfully
+    if random.random() < 0.5:
+        state.current_enemies = []
+        msg = f"Escaped from {enemy.name} back to Shibuya Station!"
+        p.current_location = "Shibuya Station"
+        state.combat_log = [msg] + state.combat_log
+        return {"message": msg, "state": get_state()}
+    else:
+        # Fail to escape: enemy attacks
+        e_dmg = enemy.attack_power
+        actual_dmg = p.take_damage(e_dmg)
+        log = [
+            f"Failed to escape from {enemy.name}!",
+            f"{enemy.name} attacks you for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg})."
+        ]
+        if p.hp <= 0:
+            p.hp = 0
+            log.append("You have been defeated! Respawning at Shibuya Station.")
+            p.current_location = "Shibuya Station"
+            p.hp = p.max_hp // 2
+            state.current_enemies = []
+            
+        state.combat_log = log + state.combat_log
+        return {"message": "Escape failed", "state": get_state()}
 
 
 if __name__ == "__main__":

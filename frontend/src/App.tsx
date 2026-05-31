@@ -31,17 +31,19 @@ interface PlayerState {
   current_location: string;
 }
 
+interface EnemyState {
+  name: string;
+  hp: number;
+  max_hp: number;
+  attack_power: number;
+  xp_reward: number;
+  gold_reward: number;
+}
+
 interface GameStateData {
   player: PlayerState;
   combat: {
-    enemies: Array<{
-      name: string;
-      hp: number;
-      max_hp: number;
-      attack_power: number;
-      xp_reward: number;
-      gold_reward: number;
-    }>;
+    enemies: EnemyState[];
     log: string[];
   };
 }
@@ -163,6 +165,9 @@ function App() {
     handleAction('player/move', { destination: dest })
   }
 
+  const attackEnemy = () => handleAction('combat/attack')
+  const runAway = () => handleAction('combat/run')
+
   if (loading && !gameState) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh]">
@@ -194,13 +199,16 @@ function App() {
 
   if (!gameState || !gameState.player) return null
 
-  const { player } = gameState
+  const { player, combat } = gameState
   const hpPct = (player.hp / player.max_hp) * 100
   const energyPct = (player.energy / player.max_energy) * 100
   const xpPct = (player.xp / (player.level * 100)) * 100
 
   // Calculate current location details
   const currentLocDetails = mapData[player.current_location]
+  const inCombat = combat.enemies && combat.enemies.length > 0
+  const activeEnemy = inCombat ? combat.enemies[0] : null
+  const enemyHpPct = activeEnemy ? (activeEnemy.hp / activeEnemy.max_hp) * 100 : 0
 
   return (
     <div className="max-w-[1200px] w-full mx-auto p-5 box-border">
@@ -209,7 +217,7 @@ function App() {
           Domain of the Soul Society
         </h1>
         <div className="text-neon-cyan font-mono text-sm tracking-wider">
-          Soul Reaper Status Management Terminal v1.3.1 (TypeScript + TailwindCSS v4)
+          Soul Reaper Status Management Terminal v1.4.0 (TypeScript + TailwindCSS v4)
         </div>
       </header>
 
@@ -328,9 +336,14 @@ function App() {
             </h2>
 
             {/* Interactive SVG/CSS Map Layout */}
-            <div className="relative w-full h-[220px] bg-black/45 border border-white/10 rounded-lg overflow-hidden mb-4 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)]">
+            <div className={`relative w-full h-[220px] bg-black/45 border rounded-lg overflow-hidden mb-4 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)] transition-colors ${inCombat ? 'border-red-500/35' : 'border-white/10'}`}>
               {/* Grid backdrop */}
               <div className="absolute inset-0 bg-[linear-gradient(rgba(102,252,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+
+              {/* Red warning grid overlay when in combat */}
+              {inCombat && (
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.02)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none animate-pulse"></div>
+              )}
 
               {/* Connections SVG lines */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
@@ -345,7 +358,7 @@ function App() {
                         y1={`${loc.y}%`}
                         x2={`${target.x}%`}
                         y2={`${target.y}%`}
-                        stroke="rgba(102, 252, 241, 0.2)"
+                        stroke={inCombat ? "rgba(239, 68, 68, 0.15)" : "rgba(102, 252, 241, 0.2)"}
                         strokeWidth="2"
                         strokeDasharray="4 4"
                       />
@@ -362,22 +375,28 @@ function App() {
                 return (
                   <div
                     key={name}
-                    className="absolute z-10 transform -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                    className={`absolute z-10 transform -translate-x-1/2 -translate-y-1/2 group ${
+                      inCombat ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                    }`}
                     style={{ left: `${loc.x}%`, top: `${loc.y}%` }}
-                    onClick={() => (isConnected || isCurrent) && movePlayer(name)}
+                    onClick={() => !inCombat && (isConnected || isCurrent) && movePlayer(name)}
                   >
                     {/* Glowing effect for current position */}
                     {isCurrent ? (
-                      <div className="w-7 h-7 rounded-full bg-neon-cyan/20 border-2 border-neon-cyan animate-ping absolute -inset-1"></div>
+                      <div className={`w-7 h-7 rounded-full border-2 animate-ping absolute -inset-1 ${
+                        inCombat ? 'bg-red-500/20 border-red-500' : 'bg-neon-cyan/20 border-neon-cyan'
+                      }`}></div>
                     ) : null}
 
                     {/* Node Dot */}
                     <div className={`w-4 h-4 rounded-full border-2 transition-all ${
                       isCurrent 
-                        ? 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
+                        ? inCombat 
+                          ? 'bg-red-500 border-white scale-110 shadow-[0_0_10px_#ef4444]'
+                          : 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
                         : isConnected 
                           ? 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
-                          : 'bg-transparent border-gray-700 pointer-events-none'
+                          : 'bg-transparent border-gray-700'
                     }`}></div>
 
                     {/* Hover Label */}
@@ -389,8 +408,28 @@ function App() {
               })}
             </div>
 
+            {/* Combat Encounter Panel */}
+            {inCombat && activeEnemy && (
+              <div className="bg-red-950/20 border border-red-500/30 rounded-lg p-4 mb-4 text-left shadow-lg animate-pulse">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] uppercase text-red-500 font-extrabold tracking-widest">⚠️ Combat Encounter</span>
+                  <span className="text-[10px] text-gray-500">Gold Reward: {activeEnemy.gold_reward} | XP: {activeEnemy.xp_reward}</span>
+                </div>
+                <div className="flex justify-between items-baseline mb-2">
+                  <h3 className="text-base font-black text-white">{activeEnemy.name}</h3>
+                  <span className="font-mono text-xs text-red-400">HP: {activeEnemy.hp} / {activeEnemy.max_hp}</span>
+                </div>
+                <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
+                  <div 
+                    className="h-full rounded-full bg-gradient-to-r from-red-900 to-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)] transition-all duration-350" 
+                    style={{ width: `${enemyHpPct}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
             {/* Current Location Details Banner */}
-            {currentLocDetails && (
+            {!inCombat && currentLocDetails && (
               <div className="bg-neon-cyan/5 border border-neon-cyan/15 rounded-lg p-3 mb-4 text-left">
                 <span className="text-[10px] uppercase text-neon-cyan font-bold tracking-wider">Sector Overview</span>
                 <h3 className="text-sm font-black text-white">{currentLocDetails.name}</h3>
@@ -440,20 +479,37 @@ function App() {
             </div>
 
             {/* Control Actions */}
-            <div className="flex gap-4 mb-4">
-              <button 
-                className="flex-1 bg-gradient-to-br from-neon-magenta to-neon-purple text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)] transition-all duration-200" 
-                onClick={exploreDungeon}
-              >
-                Explore Dungeon
-              </button>
-              <button 
-                className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2.5 px-4 cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
-                onClick={resetPlayer}
-              >
-                Reset Character
-              </button>
-            </div>
+            {inCombat ? (
+              <div className="flex gap-4 mb-4">
+                <button 
+                  className="flex-1 bg-gradient-to-br from-red-600 to-red-800 text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(239,68,68,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(239,68,68,0.5)] transition-all duration-200" 
+                  onClick={attackEnemy}
+                >
+                  ⚡ Attack Enemy
+                </button>
+                <button 
+                  className="bg-white/5 text-red-300 border border-red-500/20 rounded-lg py-2.5 px-5 cursor-pointer hover:bg-red-500/10 hover:text-white hover:border-red-500 transition-all duration-200" 
+                  onClick={runAway}
+                >
+                  🏃 Escape
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-4 mb-4">
+                <button 
+                  className="flex-1 bg-gradient-to-br from-neon-magenta to-neon-purple text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)] transition-all duration-200" 
+                  onClick={exploreDungeon}
+                >
+                  Explore Dungeon
+                </button>
+                <button 
+                  className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2.5 px-4 cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
+                  onClick={resetPlayer}
+                >
+                  Reset Character
+                </button>
+              </div>
+            )}
 
             <div className="flex justify-end gap-3">
               <button 
