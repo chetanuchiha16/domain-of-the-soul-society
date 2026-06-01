@@ -10,16 +10,44 @@
   --color-hp-color: #ff3e3e;
   --color-energy-color: #00bcd4;
   --color-xp-color: #8bc34a;
+  
+  --font-orbitron: 'Orbitron', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
 }
 
 body {
   margin: 0;
   background-color: var(--color-bg-dark);
-  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-outfit);
   color: #c5c6c7;
+  overflow-x: hidden;
 }
 
-/* Custom scrollbars since utilities don't cover it easily */
+h1, h2, h3, .font-orbitron {
+  font-family: var(--font-orbitron);
+}
+
+/* Custom Shibuya Vibe Scanlines Overlay */
+.shibuya-scanlines {
+  position: relative;
+}
+.shibuya-scanlines::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 2;
+  background-size: 100% 3px, 3px 100%;
+  pointer-events: none;
+}
+
+/* Cursed Shibuya Glow */
+.shibuya-neon-text {
+  text-shadow: 0 0 5px rgba(255, 0, 127, 0.6), 0 0 15px rgba(255, 0, 127, 0.4);
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -32,4 +60,15 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(102, 252, 241, 0.4);
+}
+
+/* CRT Flickering / Cursed Pulse Animation */
+@keyframes cursed-flicker {
+  0% { opacity: 0.98; }
+  50% { opacity: 1; }
+  100% { opacity: 0.98; }
+}
+
+.cursed-pulse {
+  animation: cursed-flicker 0.15s infinite;
 }

@@ -210,323 +210,386 @@ function App() {
   const activeEnemy = inCombat ? combat.enemies[0] : null
   const enemyHpPct = activeEnemy ? (activeEnemy.hp / activeEnemy.max_hp) * 100 : 0
 
+  // Shibuya Region theme
+  const currentRegion = currentLocDetails?.region || "Shibuya"
+  const isShibuya = currentRegion.toLowerCase() === 'shibuya'
+
   return (
-    <div className="max-w-[1200px] w-full mx-auto p-5 box-border">
-      <header className="mb-7 text-center border-b-2 border-neon-cyan/20 pb-5">
-        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-widest text-white [text-shadow:0_0_10px_rgba(102,252,241,0.3),0_0_20px_rgba(255,0,127,0.2)] my-2">
-          Domain of the Soul Society
-        </h1>
-        <div className="text-neon-cyan font-mono text-sm tracking-wider">
-          Soul Reaper Status Management Terminal v1.4.0 (TypeScript + TailwindCSS v4)
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-6 mb-7">
-        {/* Left Column: Player Stats */}
-        <section className="bg-bg-panel/45 backdrop-blur-md border border-neon-cyan/20 rounded-xl p-5 shadow-2xl transition-all duration-300 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]">
-          <h2 className="text-xl font-bold text-white border-l-4 border-neon-cyan pl-3 mb-5 uppercase tracking-wider">
-            Soul Status
-          </h2>
-          
-          <div className="flex justify-between items-baseline mb-4">
-            <span className="text-2xl font-bold text-white">{player.name}</span>
-            <span className="text-neon-cyan font-mono text-sm tracking-wide">RANK: Soul Reaper (LVL {player.level})</span>
+    <div className={`min-h-screen w-full transition-all duration-500 ${isShibuya ? 'shibuya-scanlines bg-[#0a0a0f] text-gray-200' : 'bg-bg-dark text-[#c5c6c7]'}`}>
+      <div className="max-w-[1200px] w-full mx-auto p-5 box-border">
+        
+        {/* Dynamic header style based on active zone */}
+        <header className={`mb-7 text-center border-b-2 pb-5 transition-all duration-500 ${isShibuya ? 'border-neon-magenta/25' : 'border-neon-cyan/20'}`}>
+          <h1 className={`text-4xl md:text-5xl font-black uppercase tracking-widest transition-all duration-500 my-2 ${
+            isShibuya 
+              ? 'text-white shibuya-neon-text' 
+              : 'text-white [text-shadow:0_0_10px_rgba(102,252,241,0.3),0_0_20px_rgba(255,0,127,0.2)]'
+          }`}>
+            Domain of the Soul Society
+          </h1>
+          <div className={`font-mono text-xs tracking-widest transition-all duration-500 ${isShibuya ? 'text-neon-magenta font-semibold' : 'text-neon-cyan'}`}>
+            {isShibuya ? '⚠️ SECTOR LOCKDOWN: SHIBUYA DISTRICT ACTIVE' : 'Soul Reaper Status Management Terminal v1.4.0'}
           </div>
+        </header>
 
-          {/* HP Bar */}
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
-              <span>HP</span>
-              <span>{player.hp} / {player.max_hp}</span>
-            </div>
-            <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
-              <div 
-                className="h-full rounded-full bg-gradient-to-r from-red-800 to-hp-color shadow-[0_0_8px_rgba(255,62,62,0.5)] transition-all duration-300" 
-                style={{ width: `${hpPct}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Energy Bar */}
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
-              <span>Reiryoku (Energy)</span>
-              <span>{player.energy} / {player.max_energy}</span>
-            </div>
-            <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
-              <div 
-                className="h-full rounded-full bg-gradient-to-r from-cyan-800 to-energy-color shadow-[0_0_8px_rgba(0,188,212,0.5)] transition-all duration-300" 
-                style={{ width: `${energyPct}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* XP Bar */}
-          <div className="mb-5">
-            <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
-              <span>XP ({Math.round(xpPct)}%)</span>
-              <span>{player.xp} / {player.level * 100}</span>
-            </div>
-            <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
-              <div 
-                className="h-full rounded-full bg-gradient-to-r from-green-800 to-xp-color shadow-[0_0_8px_rgba(139,195,74,0.5)] transition-all duration-300" 
-                style={{ width: `${xpPct}%` }}
-              ></div>
-            </div>
-          </div>
-
-          {/* Attributes */}
-          <div className="grid grid-cols-2 gap-4 mt-5">
-            <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-neon-cyan">{player.attack_power}</div>
-              <div className="text-[10px] uppercase text-gray-500 mt-1">Attack Power</div>
-            </div>
-            <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-neon-cyan">{player.gold}</div>
-              <div className="text-[10px] uppercase text-gray-500 mt-1">Gold Coins</div>
-            </div>
-          </div>
-
-          {/* Summon Seals */}
-          <div className="mt-5 text-left">
-            <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Active Summon Seals</span>
-            <div className="flex flex-wrap gap-2.5 mt-2">
-              {player.summons.length > 0 ? (
-                player.summons.map((s, idx) => (
-                  <span key={idx} className="bg-neon-cyan/10 border border-neon-cyan/20 rounded px-2 py-1 text-xs text-neon-cyan capitalize">
-                    🔮 {s}
-                  </span>
-                ))
-              ) : (
-                <span className="text-xs text-gray-600 italic">No active seals in inventory.</span>
-              )}
-            </div>
-          </div>
-
-          {/* Equipped Gear */}
-          <div className="mt-6 border-t border-neon-cyan/20 pt-5">
-            <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider block text-left mb-2.5">Equipped Gear</span>
-            <div className="grid grid-cols-2 gap-4">
-              <div className={`p-3 flex items-center gap-3 rounded-lg border transition-all ${player.equipped_weapon ? 'bg-neon-cyan/5 border-neon-cyan/30' : 'bg-violet-500/5 border-dashed border-violet-500/30'}`}>
-                <div className="text-3xl">⚔️</div>
-                <div className="text-left">
-                  <div className="text-[10px] uppercase text-gray-500">Weapon</div>
-                  <div className="font-bold text-white text-sm">{player.equipped_weapon ? player.equipped_weapon.name : 'None'}</div>
-                  {player.equipped_weapon && <div className="text-[10px] text-neon-cyan">+{player.equipped_weapon.attack_bonus} ATK</div>}
-                </div>
-              </div>
-
-              <div className={`p-3 flex items-center gap-3 rounded-lg border transition-all ${player.equipped_armor ? 'bg-neon-cyan/5 border-neon-cyan/30' : 'bg-violet-500/5 border-dashed border-violet-500/30'}`}>
-                <div className="text-3xl">🛡️</div>
-                <div className="text-left">
-                  <div className="text-[10px] uppercase text-gray-500">Armor</div>
-                  <div className="font-bold text-white text-sm">{player.equipped_armor ? player.equipped_armor.name : 'None'}</div>
-                  {player.equipped_armor && <div className="text-[10px] text-neon-cyan">+{player.equipped_armor.defense_bonus} DEF</div>}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Right Column: Interactive Map & Inventory & Commands */}
-        <section className="bg-bg-panel/45 backdrop-blur-md border border-neon-cyan/20 rounded-xl p-5 shadow-2xl flex flex-col justify-between transition-all duration-300 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]">
-          <div>
-            <h2 className="text-xl font-bold text-white border-l-4 border-neon-cyan pl-3 mb-4 uppercase tracking-wider">
-              Tactical Hologram Map
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-6 mb-7">
+          {/* Left Column: Player Stats */}
+          <section className={`backdrop-blur-md border rounded-xl p-5 shadow-2xl transition-all duration-300 ${
+            isShibuya 
+              ? 'bg-black/45 border-neon-magenta/20 hover:border-neon-magenta/40 hover:shadow-[0_8px_32px_rgba(255,0,127,0.05)]' 
+              : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
+          }`}>
+            <h2 className={`text-xl font-bold text-white border-l-4 pl-3 mb-5 uppercase tracking-wider transition-all duration-500 ${
+              isShibuya ? 'border-neon-magenta text-white' : 'border-neon-cyan'
+            }`}>
+              Soul Status
             </h2>
-
-            {/* Interactive SVG/CSS Map Layout */}
-            <div className={`relative w-full h-[220px] bg-black/45 border rounded-lg overflow-hidden mb-4 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)] transition-colors ${inCombat ? 'border-red-500/35' : 'border-white/10'}`}>
-              {/* Grid backdrop */}
-              <div className="absolute inset-0 bg-[linear-gradient(rgba(102,252,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
-
-              {/* Red warning grid overlay when in combat */}
-              {inCombat && (
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.02)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none animate-pulse"></div>
-              )}
-
-              {/* Connections SVG lines */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                {Object.entries(mapData).map(([name, loc]) =>
-                  loc.connections.map(conn => {
-                    const target = mapData[conn];
-                    if (!target) return null;
-                    return (
-                      <line
-                        key={`${name}-${conn}`}
-                        x1={`${loc.x}%`}
-                        y1={`${loc.y}%`}
-                        x2={`${target.x}%`}
-                        y2={`${target.y}%`}
-                        stroke={inCombat ? "rgba(239, 68, 68, 0.15)" : "rgba(102, 252, 241, 0.2)"}
-                        strokeWidth="2"
-                        strokeDasharray="4 4"
-                      />
-                    );
-                  })
-                )}
-              </svg>
-
-              {/* Location Interactive Nodes */}
-              {Object.entries(mapData).map(([name, loc]) => {
-                const isCurrent = player.current_location === name;
-                const isConnected = currentLocDetails?.connections.includes(name);
-                
-                return (
-                  <div
-                    key={name}
-                    className={`absolute z-10 transform -translate-x-1/2 -translate-y-1/2 group ${
-                      inCombat ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                    }`}
-                    style={{ left: `${loc.x}%`, top: `${loc.y}%` }}
-                    onClick={() => !inCombat && (isConnected || isCurrent) && movePlayer(name)}
-                  >
-                    {/* Glowing effect for current position */}
-                    {isCurrent ? (
-                      <div className={`w-7 h-7 rounded-full border-2 animate-ping absolute -inset-1 ${
-                        inCombat ? 'bg-red-500/20 border-red-500' : 'bg-neon-cyan/20 border-neon-cyan'
-                      }`}></div>
-                    ) : null}
-
-                    {/* Node Dot */}
-                    <div className={`w-4 h-4 rounded-full border-2 transition-all ${
-                      isCurrent 
-                        ? inCombat 
-                          ? 'bg-red-500 border-white scale-110 shadow-[0_0_10px_#ef4444]'
-                          : 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
-                        : isConnected 
-                          ? 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
-                          : 'bg-transparent border-gray-700'
-                    }`}></div>
-
-                    {/* Hover Label */}
-                    <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-black/85 border border-neon-cyan/35 text-[9px] text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
-                      {name} {isCurrent && "(Current)"}
-                    </div>
-                  </div>
-                );
-              })}
+            
+            <div className="flex justify-between items-baseline mb-4">
+              <span className="text-2xl font-bold text-white">{player.name}</span>
+              <span className={`font-mono text-sm tracking-wide transition-all duration-500 ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>
+                RANK: Soul Reaper (LVL {player.level})
+              </span>
             </div>
 
-            {/* Combat Encounter Panel */}
-            {inCombat && activeEnemy && (
-              <div className="bg-red-950/20 border border-red-500/30 rounded-lg p-4 mb-4 text-left shadow-lg animate-pulse">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] uppercase text-red-500 font-extrabold tracking-widest">⚠️ Combat Encounter</span>
-                  <span className="text-[10px] text-gray-500">Gold Reward: {activeEnemy.gold_reward} | XP: {activeEnemy.xp_reward}</span>
-                </div>
-                <div className="flex justify-between items-baseline mb-2">
-                  <h3 className="text-base font-black text-white">{activeEnemy.name}</h3>
-                  <span className="font-mono text-xs text-red-400">HP: {activeEnemy.hp} / {activeEnemy.max_hp}</span>
-                </div>
-                <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
-                  <div 
-                    className="h-full rounded-full bg-gradient-to-r from-red-900 to-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)] transition-all duration-350" 
-                    style={{ width: `${enemyHpPct}%` }}
-                  ></div>
-                </div>
-              </div>
-            )}
-
-            {/* Current Location Details Banner */}
-            {!inCombat && currentLocDetails && (
-              <div className="bg-neon-cyan/5 border border-neon-cyan/15 rounded-lg p-3 mb-4 text-left">
-                <span className="text-[10px] uppercase text-neon-cyan font-bold tracking-wider">Sector Overview</span>
-                <h3 className="text-sm font-black text-white">{currentLocDetails.name}</h3>
-                <p className="text-xs text-gray-400 mt-1 leading-relaxed">{currentLocDetails.description}</p>
-              </div>
-            )}
-
-            {/* Inventory Section */}
+            {/* HP Bar */}
             <div className="mb-4">
-              <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider block text-left mb-2">Carried Items</span>
-              {player.inventory.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[140px] overflow-y-auto pr-1">
-                  {player.inventory.map((item, idx) => (
-                    <div 
+              <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
+                <span>HP</span>
+                <span>{player.hp} / {player.max_hp}</span>
+              </div>
+              <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-red-800 to-hp-color shadow-[0_0_8px_rgba(255,62,62,0.5)] transition-all duration-300" 
+                  style={{ width: `${hpPct}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Energy Bar */}
+            <div className="mb-4">
+              <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
+                <span>Reiryoku (Energy)</span>
+                <span>{player.energy} / {player.max_energy}</span>
+              </div>
+              <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-800 to-energy-color shadow-[0_0_8px_rgba(0,188,212,0.5)] transition-all duration-300" 
+                  style={{ width: `${energyPct}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* XP Bar */}
+            <div className="mb-5">
+              <div className="flex justify-between text-sm mb-1 uppercase font-bold text-gray-300">
+                <span>XP ({Math.round(xpPct)}%)</span>
+                <span>{player.xp} / {player.level * 100}</span>
+              </div>
+              <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
+                <div 
+                  className="h-full rounded-full bg-gradient-to-r from-green-800 to-xp-color shadow-[0_0_8px_rgba(139,195,74,0.5)] transition-all duration-300" 
+                  style={{ width: `${xpPct}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Attributes */}
+            <div className="grid grid-cols-2 gap-4 mt-5">
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+                <div className={`text-2xl font-bold transition-all duration-500 ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>{player.attack_power}</div>
+                <div className="text-[10px] uppercase text-gray-500 mt-1">Attack Power</div>
+              </div>
+              <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
+                <div className={`text-2xl font-bold transition-all duration-500 ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>{player.gold}</div>
+                <div className="text-[10px] uppercase text-gray-500 mt-1">Gold Coins</div>
+              </div>
+            </div>
+
+            {/* Summon Seals */}
+            <div className="mt-5 text-left">
+              <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">Active Summon Seals</span>
+              <div className="flex flex-wrap gap-2.5 mt-2">
+                {player.summons.length > 0 ? (
+                  player.summons.map((s, idx) => (
+                    <span 
                       key={idx} 
-                      className="bg-white/5 border border-white/10 rounded-lg p-2.5 text-center flex flex-col justify-between min-h-[90px] cursor-pointer transition-all duration-200 hover:bg-neon-cyan/5 hover:border-neon-cyan/30 hover:-translate-y-0.5" 
-                      onClick={() => useItem(item.name, item.item_type)}
+                      className={`border rounded px-2 py-1 text-xs capitalize transition-all duration-500 ${
+                        isShibuya ? 'bg-neon-magenta/10 border-neon-magenta/20 text-neon-magenta' : 'bg-neon-cyan/10 border-neon-cyan/20 text-neon-cyan'
+                      }`}
                     >
-                      <div>
-                        <div className="text-xl mb-1">
-                          {item.item_type === 'weapon' ? '⚔️' : item.item_type === 'armor' ? '🛡️' : '🧪'}
-                        </div>
-                        <div className="font-bold text-[11px] text-white truncate">{item.name}</div>
-                      </div>
-                      <div className="text-[9px] uppercase text-gray-500">
-                        {item.item_type === 'weapon' ? `+${item.attack_bonus} ATK` : item.item_type === 'armor' ? `+${item.defense_bonus} DEF` : 'Restore HP'}
+                      🔮 {s}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-xs text-gray-600 italic">No active seals in inventory.</span>
+                )}
+              </div>
+            </div>
+
+            {/* Equipped Gear */}
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider block text-left mb-2.5">Equipped Gear</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-3 flex items-center gap-3 rounded-lg border transition-all ${
+                  player.equipped_weapon 
+                    ? isShibuya ? 'bg-neon-magenta/5 border-neon-magenta/30' : 'bg-neon-cyan/5 border-neon-cyan/30' 
+                    : 'bg-violet-500/5 border-dashed border-violet-500/30'
+                }`}>
+                  <div className="text-3xl">⚔️</div>
+                  <div className="text-left">
+                    <div className="text-[10px] uppercase text-gray-500">Weapon</div>
+                    <div className="font-bold text-white text-sm">{player.equipped_weapon ? player.equipped_weapon.name : 'None'}</div>
+                    {player.equipped_weapon && <div className={`text-[10px] ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>+{player.equipped_weapon.attack_bonus} ATK</div>}
+                  </div>
+                </div>
+
+                <div className={`p-3 flex items-center gap-3 rounded-lg border transition-all ${
+                  player.equipped_armor 
+                    ? isShibuya ? 'bg-neon-magenta/5 border-neon-magenta/30' : 'bg-neon-cyan/5 border-neon-cyan/30' 
+                    : 'bg-violet-500/5 border-dashed border-violet-500/30'
+                }`}>
+                  <div className="text-3xl">🛡️</div>
+                  <div className="text-left">
+                    <div className="text-[10px] uppercase text-gray-500">Armor</div>
+                    <div className="font-bold text-white text-sm">{player.equipped_armor ? player.equipped_armor.name : 'None'}</div>
+                    {player.equipped_armor && <div className={`text-[10px] ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>+{player.equipped_armor.defense_bonus} DEF</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Right Column: Interactive Map & Inventory & Commands */}
+          <section className={`backdrop-blur-md border rounded-xl p-5 shadow-2xl flex flex-col justify-between transition-all duration-300 ${
+            isShibuya 
+              ? 'bg-black/45 border-neon-magenta/20 hover:border-neon-magenta/40 hover:shadow-[0_8px_32px_rgba(255,0,127,0.05)]' 
+              : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
+          }`}>
+            <div>
+              <h2 className="text-xl font-bold text-white border-l-4 border-neon-cyan pl-3 mb-4 uppercase tracking-wider">
+                Tactical Hologram Map
+              </h2>
+
+              {/* Interactive SVG/CSS Map Layout */}
+              <div className={`relative w-full h-[220px] bg-black/45 border rounded-lg overflow-hidden mb-4 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)] transition-colors ${
+                inCombat ? 'border-red-500/35' : isShibuya ? 'border-neon-magenta/15' : 'border-white/10'
+              }`}>
+                {/* Grid backdrop */}
+                <div className={`absolute inset-0 bg-[linear-gradient(rgba(102,252,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none transition-all duration-500 ${
+                  isShibuya ? 'opacity-30' : 'opacity-100'
+                }`}></div>
+
+                {isShibuya && (
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,127,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,0,127,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+                )}
+
+                {/* Red warning grid overlay when in combat */}
+                {inCombat && (
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.02)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none animate-pulse"></div>
+                )}
+
+                {/* Connections SVG lines */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+                  {Object.entries(mapData).map(([name, loc]) =>
+                    loc.connections.map(conn => {
+                      const target = mapData[conn];
+                      if (!target) return null;
+                      return (
+                        <line
+                          key={`${name}-${conn}`}
+                          x1={`${loc.x}%`}
+                          y1={`${loc.y}%`}
+                          x2={`${target.x}%`}
+                          y2={`${target.y}%`}
+                          stroke={inCombat ? "rgba(239, 68, 68, 0.15)" : isShibuya ? "rgba(255, 0, 127, 0.15)" : "rgba(102, 252, 241, 0.2)"}
+                          strokeWidth="2"
+                          strokeDasharray="4 4"
+                        />
+                      );
+                    })
+                  )}
+                </svg>
+
+                {/* Location Interactive Nodes */}
+                {Object.entries(mapData).map(([name, loc]) => {
+                  const isCurrent = player.current_location === name;
+                  const isConnected = currentLocDetails?.connections.includes(name);
+                  
+                  return (
+                    <div
+                      key={name}
+                      className={`absolute z-10 transform -translate-x-1/2 -translate-y-1/2 group ${
+                        inCombat ? 'pointer-events-none opacity-50' : 'cursor-pointer'
+                      }`}
+                      style={{ left: `${loc.x}%`, top: `${loc.y}%` }}
+                      onClick={() => !inCombat && (isConnected || isCurrent) && movePlayer(name)}
+                    >
+                      {/* Glowing effect for current position */}
+                      {isCurrent ? (
+                        <div className={`w-7 h-7 rounded-full border-2 animate-ping absolute -inset-1 ${
+                          inCombat 
+                            ? 'bg-red-500/20 border-red-500' 
+                            : isShibuya 
+                              ? 'bg-neon-magenta/20 border-neon-magenta' 
+                              : 'bg-neon-cyan/20 border-neon-cyan'
+                        }`}></div>
+                      ) : null}
+
+                      {/* Node Dot */}
+                      <div className={`w-4 h-4 rounded-full border-2 transition-all ${
+                        isCurrent 
+                          ? inCombat 
+                            ? 'bg-red-500 border-white scale-110 shadow-[0_0_10px_#ef4444]'
+                            : isShibuya
+                              ? 'bg-neon-magenta border-white scale-110 shadow-[0_0_10px_#ff007f]'
+                              : 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
+                          : isConnected 
+                            ? isShibuya 
+                              ? 'bg-transparent border-neon-magenta hover:bg-neon-magenta/30 hover:scale-110' 
+                              : 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
+                            : 'bg-transparent border-gray-700'
+                      }`}></div>
+
+                      {/* Hover Label */}
+                      <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-black/85 border border-white/10 text-[9px] text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
+                        {name} {isCurrent && "(Current)"}
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
+              </div>
+
+              {/* Combat Encounter Panel */}
+              {inCombat && activeEnemy && (
+                <div className="bg-red-950/20 border border-red-500/30 rounded-lg p-4 mb-4 text-left shadow-lg animate-pulse">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-[10px] uppercase text-red-500 font-extrabold tracking-widest">⚠️ Combat Encounter</span>
+                    <span className="text-[10px] text-gray-500">Gold Reward: {activeEnemy.gold_reward} | XP: {activeEnemy.xp_reward}</span>
+                  </div>
+                  <div className="flex justify-between items-baseline mb-2">
+                    <h3 className="text-base font-black text-white">{activeEnemy.name}</h3>
+                    <span className="font-mono text-xs text-red-400">HP: {activeEnemy.hp} / {activeEnemy.max_hp}</span>
+                  </div>
+                  <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
+                    <div 
+                      className="h-full rounded-full bg-gradient-to-r from-red-900 to-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)] transition-all duration-355" 
+                      style={{ width: `${enemyHpPct}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              {/* Current Location Details Banner */}
+              {!inCombat && currentLocDetails && (
+                <div className={`rounded-lg p-3 mb-4 text-left border transition-all duration-500 ${
+                  isShibuya ? 'bg-neon-magenta/5 border-neon-magenta/15' : 'bg-neon-cyan/5 border-neon-cyan/15'
+                }`}>
+                  <span className={`text-[10px] uppercase font-bold tracking-wider transition-all duration-500 ${
+                    isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'
+                  }`}>Sector Overview</span>
+                  <h3 className="text-sm font-black text-white">{currentLocDetails.name}</h3>
+                  <p className="text-xs text-gray-400 mt-1 leading-relaxed">{currentLocDetails.description}</p>
+                </div>
+              )}
+
+              {/* Inventory Section */}
+              <div className="mb-4">
+                <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider block text-left mb-2">Carried Items</span>
+                {player.inventory.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[140px] overflow-y-auto pr-1">
+                    {player.inventory.map((item, idx) => (
+                      <div 
+                        key={idx} 
+                        className={`bg-white/5 border border-white/10 rounded-lg p-2.5 text-center flex flex-col justify-between min-h-[90px] cursor-pointer transition-all duration-200 hover:bg-white/10 ${
+                          isShibuya ? 'hover:border-neon-magenta/40' : 'hover:border-neon-cyan/40'
+                        } hover:-translate-y-0.5`} 
+                        onClick={() => useItem(item.name, item.item_type)}
+                      >
+                        <div>
+                          <div className="text-xl mb-1">
+                            {item.item_type === 'weapon' ? '⚔️' : item.item_type === 'armor' ? '🛡️' : '🧪'}
+                          </div>
+                          <div className="font-bold text-[11px] text-white truncate">{item.name}</div>
+                        </div>
+                        <div className="text-[9px] uppercase text-gray-500">
+                          {item.item_type === 'weapon' ? `+${item.attack_bonus} ATK` : item.item_type === 'armor' ? `+${item.defense_bonus} DEF` : 'Restore HP'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-6 text-center border border-dashed border-white/5 rounded-lg text-gray-600 italic text-xs">
+                    Inventory is empty. Explore the dungeon to find items!
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              {/* Log Panel */}
+              <div className="bg-black/40 border border-white/5 rounded-lg p-4 font-mono text-sm text-cyan-200 h-[140px] overflow-y-auto mb-4 shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] text-left">
+                {logs.map((log, idx) => (
+                  <div key={idx} className="mb-1.5 leading-relaxed text-xs">
+                    <span className="text-neon-cyan mr-1.5">&gt;</span>{log}
+                  </div>
+                ))}
+              </div>
+
+              {/* Control Actions */}
+              {inCombat ? (
+                <div className="flex gap-4 mb-4">
+                  <button 
+                    className="flex-1 bg-gradient-to-br from-red-600 to-red-800 text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(239,68,68,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(239,68,68,0.5)] transition-all duration-200" 
+                    onClick={attackEnemy}
+                  >
+                    ⚡ Attack Enemy
+                  </button>
+                  <button 
+                    className="bg-white/5 text-red-300 border border-red-500/20 rounded-lg py-2.5 px-5 cursor-pointer hover:bg-red-500/10 hover:text-white hover:border-red-500 transition-all duration-200" 
+                    onClick={runAway}
+                  >
+                    🏃 Escape
+                  </button>
                 </div>
               ) : (
-                <div className="py-6 text-center border border-dashed border-white/5 rounded-lg text-gray-600 italic text-xs">
-                  Inventory is empty. Explore the dungeon to find items!
+                <div className="flex gap-4 mb-4">
+                  <button 
+                    className={`flex-1 text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer transition-all duration-200 ${
+                      isShibuya
+                        ? 'bg-gradient-to-br from-neon-magenta to-neon-purple shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)]'
+                        : 'bg-gradient-to-br from-neon-cyan to-blue-600 shadow-[0_4px_15px_rgba(102,252,241,0.2)] hover:shadow-[0_6px_20px_rgba(102,252,241,0.4)]'
+                    } hover:-translate-y-0.5`} 
+                    onClick={exploreDungeon}
+                  >
+                    Explore Dungeon
+                  </button>
+                  <button 
+                    className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2.5 px-4 cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
+                    onClick={resetPlayer}
+                  >
+                    Reset Character
+                  </button>
                 </div>
               )}
-            </div>
-          </div>
 
-          <div>
-            {/* Log Panel */}
-            <div className="bg-black/40 border border-white/5 rounded-lg p-4 font-mono text-sm text-cyan-200 h-[140px] overflow-y-auto mb-4 shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] text-left">
-              {logs.map((log, idx) => (
-                <div key={idx} className="mb-1.5 leading-relaxed text-xs">
-                  <span className="text-neon-cyan mr-1.5">&gt;</span>{log}
-                </div>
-              ))}
-            </div>
-
-            {/* Control Actions */}
-            {inCombat ? (
-              <div className="flex gap-4 mb-4">
+              <div className="flex justify-end gap-3">
                 <button 
-                  className="flex-1 bg-gradient-to-br from-red-600 to-red-800 text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(239,68,68,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(239,68,68,0.5)] transition-all duration-200" 
-                  onClick={attackEnemy}
+                  className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2 px-3 text-xs cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
+                  onClick={saveGame}
                 >
-                  ⚡ Attack Enemy
+                  Save Game
                 </button>
                 <button 
-                  className="bg-white/5 text-red-300 border border-red-500/20 rounded-lg py-2.5 px-5 cursor-pointer hover:bg-red-500/10 hover:text-white hover:border-red-500 transition-all duration-200" 
-                  onClick={runAway}
+                  className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2 px-3 text-xs cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
+                  onClick={loadGame}
                 >
-                  🏃 Escape
+                  Load Game
                 </button>
               </div>
-            ) : (
-              <div className="flex gap-4 mb-4">
-                <button 
-                  className="flex-1 bg-gradient-to-br from-neon-magenta to-neon-purple text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)] transition-all duration-200" 
-                  onClick={exploreDungeon}
-                >
-                  Explore Dungeon
-                </button>
-                <button 
-                  className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2.5 px-4 cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
-                  onClick={resetPlayer}
-                >
-                  Reset Character
-                </button>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3">
-              <button 
-                className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2 px-3 text-xs cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
-                onClick={saveGame}
-              >
-                Save Game
-              </button>
-              <button 
-                className="bg-white/5 text-gray-300 border border-white/10 rounded-lg py-2 px-3 text-xs cursor-pointer hover:bg-white/10 hover:text-white hover:border-neon-cyan transition-all duration-200" 
-                onClick={loadGame}
-              >
-                Load Game
-              </button>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   )
