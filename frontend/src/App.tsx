@@ -210,25 +210,59 @@ function App() {
   const activeEnemy = inCombat ? combat.enemies[0] : null
   const enemyHpPct = activeEnemy ? (activeEnemy.hp / activeEnemy.max_hp) * 100 : 0
 
-  // Shibuya Region theme
+  // Region theme detectors
   const currentRegion = currentLocDetails?.region || "Shibuya"
   const isShibuya = currentRegion.toLowerCase() === 'shibuya'
+  const isSeireitei = currentRegion.toLowerCase() === 'soul society'
 
   return (
-    <div className={`min-h-screen w-full transition-all duration-500 ${isShibuya ? 'shibuya-scanlines bg-[#0a0a0f] text-gray-200' : 'bg-bg-dark text-[#c5c6c7]'}`}>
-      <div className="max-w-[1200px] w-full mx-auto p-5 box-border">
+    <div className={`min-h-screen w-full relative transition-all duration-500 ${
+      isShibuya 
+        ? 'shibuya-scanlines bg-[#0a0a0f] text-gray-200' 
+        : isSeireitei
+          ? 'bg-[#060814] text-[#d1d5db]'
+          : 'bg-bg-dark text-[#c5c6c7]'
+    }`}>
+      {/* Floating Sakura Petals for Soul Society theme */}
+      {isSeireitei && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="sakura-petal" style={{ left: '10%', animationDelay: '0s', width: '10px', height: '14px' }}></div>
+          <div className="sakura-petal" style={{ left: '25%', animationDelay: '3s', width: '14px', height: '18px' }}></div>
+          <div className="sakura-petal" style={{ left: '42%', animationDelay: '6s', width: '8px', height: '12px' }}></div>
+          <div className="sakura-petal" style={{ left: '60%', animationDelay: '1.5s', width: '12px', height: '16px' }}></div>
+          <div className="sakura-petal" style={{ left: '78%', animationDelay: '8s', width: '16px', height: '22px' }}></div>
+          <div className="sakura-petal" style={{ left: '90%', animationDelay: '4.5s', width: '10px', height: '14px' }}></div>
+        </div>
+      )}
+
+      <div className="max-w-[1200px] w-full mx-auto p-5 box-border relative z-10">
         
         {/* Dynamic header style based on active zone */}
-        <header className={`mb-7 text-center border-b-2 pb-5 transition-all duration-500 ${isShibuya ? 'border-neon-magenta/25' : 'border-neon-cyan/20'}`}>
+        <header className={`mb-7 text-center border-b-2 pb-5 transition-all duration-500 ${
+          isShibuya 
+            ? 'border-neon-magenta/25' 
+            : isSeireitei
+              ? 'border-pink-500/20'
+              : 'border-neon-cyan/20'
+        }`}>
           <h1 className={`text-4xl md:text-5xl font-black uppercase tracking-widest transition-all duration-500 my-2 ${
             isShibuya 
               ? 'text-white shibuya-neon-text' 
-              : 'text-white [text-shadow:0_0_10px_rgba(102,252,241,0.3),0_0_20px_rgba(255,0,127,0.2)]'
+              : isSeireitei
+                ? 'text-white seireitei-neon-text'
+                : 'text-white [text-shadow:0_0_10px_rgba(102,252,241,0.3),0_0_20px_rgba(255,0,127,0.2)]'
           }`}>
             Domain of the Soul Society
           </h1>
-          <div className={`font-mono text-xs tracking-widest transition-all duration-500 ${isShibuya ? 'text-neon-magenta font-semibold' : 'text-neon-cyan'}`}>
-            {isShibuya ? '⚠️ SECTOR LOCKDOWN: SHIBUYA DISTRICT ACTIVE' : 'Soul Reaper Status Management Terminal v1.4.0'}
+          <div className={`font-mono text-xs tracking-widest transition-all duration-500 ${
+            isShibuya 
+              ? 'text-neon-magenta font-semibold' 
+              : isSeireitei
+                ? 'text-pink-300 font-semibold'
+                : 'text-neon-cyan'
+          }`}>
+            {isShibuya && '⚠️ SECTOR LOCKDOWN: SHIBUYA DISTRICT ACTIVE'}
+            {isSeireitei && '🌸 SPIRITUAL PRESSURE AREA: SEIREITEI / SOUL SOCIETY'}
           </div>
         </header>
 
@@ -237,17 +271,29 @@ function App() {
           <section className={`backdrop-blur-md border rounded-xl p-5 shadow-2xl transition-all duration-300 ${
             isShibuya 
               ? 'bg-black/45 border-neon-magenta/20 hover:border-neon-magenta/40 hover:shadow-[0_8px_32px_rgba(255,0,127,0.05)]' 
-              : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
+              : isSeireitei
+                ? 'bg-black/45 border-pink-500/20 hover:border-pink-500/40 hover:shadow-[0_8px_32px_rgba(255,183,197,0.05)]'
+                : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
           }`}>
             <h2 className={`text-xl font-bold text-white border-l-4 pl-3 mb-5 uppercase tracking-wider transition-all duration-500 ${
-              isShibuya ? 'border-neon-magenta text-white' : 'border-neon-cyan'
+              isShibuya 
+                ? 'border-neon-magenta text-white' 
+                : isSeireitei
+                  ? 'border-pink-400 text-white'
+                  : 'border-neon-cyan'
             }`}>
               Soul Status
             </h2>
             
             <div className="flex justify-between items-baseline mb-4">
               <span className="text-2xl font-bold text-white">{player.name}</span>
-              <span className={`font-mono text-sm tracking-wide transition-all duration-500 ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>
+              <span className={`font-mono text-sm tracking-wide transition-all duration-500 ${
+                isShibuya 
+                  ? 'text-neon-magenta' 
+                  : isSeireitei
+                    ? 'text-pink-300'
+                    : 'text-neon-cyan'
+              }`}>
                 RANK: Soul Reaper (LVL {player.level})
               </span>
             </div>
@@ -260,7 +306,11 @@ function App() {
               </div>
               <div className="w-full bg-white/10 h-3.5 rounded-full overflow-hidden border border-white/5">
                 <div 
-                  className="h-full rounded-full bg-gradient-to-r from-red-800 to-hp-color shadow-[0_0_8px_rgba(255,62,62,0.5)] transition-all duration-300" 
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    isSeireitei 
+                      ? 'bg-gradient-to-r from-pink-700 to-pink-400 shadow-[0_0_8px_rgba(236,72,153,0.5)]'
+                      : 'bg-gradient-to-r from-red-800 to-hp-color shadow-[0_0_8px_rgba(255,62,62,0.5)]'
+                  }`} 
                   style={{ width: `${hpPct}%` }}
                 ></div>
               </div>
@@ -297,11 +347,23 @@ function App() {
             {/* Attributes */}
             <div className="grid grid-cols-2 gap-4 mt-5">
               <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
-                <div className={`text-2xl font-bold transition-all duration-500 ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>{player.attack_power}</div>
+                <div className={`text-2xl font-bold transition-all duration-500 ${
+                  isShibuya 
+                    ? 'text-neon-magenta' 
+                    : isSeireitei
+                      ? 'text-pink-300'
+                      : 'text-neon-cyan'
+                }`}>{player.attack_power}</div>
                 <div className="text-[10px] uppercase text-gray-500 mt-1">Attack Power</div>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-lg p-3 text-center">
-                <div className={`text-2xl font-bold transition-all duration-500 ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>{player.gold}</div>
+                <div className={`text-2xl font-bold transition-all duration-500 ${
+                  isShibuya 
+                    ? 'text-neon-magenta' 
+                    : isSeireitei
+                      ? 'text-pink-300'
+                      : 'text-neon-cyan'
+                }`}>{player.gold}</div>
                 <div className="text-[10px] uppercase text-gray-500 mt-1">Gold Coins</div>
               </div>
             </div>
@@ -315,7 +377,11 @@ function App() {
                     <span 
                       key={idx} 
                       className={`border rounded px-2 py-1 text-xs capitalize transition-all duration-500 ${
-                        isShibuya ? 'bg-neon-magenta/10 border-neon-magenta/20 text-neon-magenta' : 'bg-neon-cyan/10 border-neon-cyan/20 text-neon-cyan'
+                        isShibuya 
+                          ? 'bg-neon-magenta/10 border-neon-magenta/20 text-neon-magenta' 
+                          : isSeireitei
+                            ? 'bg-pink-500/10 border-pink-500/20 text-pink-300'
+                            : 'bg-neon-cyan/10 border-neon-cyan/20 text-neon-cyan'
                       }`}
                     >
                       🔮 {s}
@@ -333,27 +399,47 @@ function App() {
               <div className="grid grid-cols-2 gap-4">
                 <div className={`p-3 flex items-center gap-3 rounded-lg border transition-all ${
                   player.equipped_weapon 
-                    ? isShibuya ? 'bg-neon-magenta/5 border-neon-magenta/30' : 'bg-neon-cyan/5 border-neon-cyan/30' 
+                    ? isShibuya 
+                      ? 'bg-neon-magenta/5 border-neon-magenta/30' 
+                      : isSeireitei
+                        ? 'bg-pink-500/5 border-pink-500/30'
+                        : 'bg-neon-cyan/5 border-neon-cyan/30' 
                     : 'bg-violet-500/5 border-dashed border-violet-500/30'
                 }`}>
                   <div className="text-3xl">⚔️</div>
                   <div className="text-left">
                     <div className="text-[10px] uppercase text-gray-500">Weapon</div>
                     <div className="font-bold text-white text-sm">{player.equipped_weapon ? player.equipped_weapon.name : 'None'}</div>
-                    {player.equipped_weapon && <div className={`text-[10px] ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>+{player.equipped_weapon.attack_bonus} ATK</div>}
+                    {player.equipped_weapon && <div className={`text-[10px] ${
+                      isShibuya 
+                        ? 'text-neon-magenta' 
+                        : isSeireitei
+                          ? 'text-pink-300'
+                          : 'text-neon-cyan'
+                    }`}>+{player.equipped_weapon.attack_bonus} ATK</div>}
                   </div>
                 </div>
 
                 <div className={`p-3 flex items-center gap-3 rounded-lg border transition-all ${
                   player.equipped_armor 
-                    ? isShibuya ? 'bg-neon-magenta/5 border-neon-magenta/30' : 'bg-neon-cyan/5 border-neon-cyan/30' 
+                    ? isShibuya 
+                      ? 'bg-neon-magenta/5 border-neon-magenta/30' 
+                      : isSeireitei
+                        ? 'bg-pink-500/5 border-pink-500/30'
+                        : 'bg-neon-cyan/5 border-neon-cyan/30' 
                     : 'bg-violet-500/5 border-dashed border-violet-500/30'
                 }`}>
                   <div className="text-3xl">🛡️</div>
                   <div className="text-left">
                     <div className="text-[10px] uppercase text-gray-500">Armor</div>
                     <div className="font-bold text-white text-sm">{player.equipped_armor ? player.equipped_armor.name : 'None'}</div>
-                    {player.equipped_armor && <div className={`text-[10px] ${isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'}`}>+{player.equipped_armor.defense_bonus} DEF</div>}
+                    {player.equipped_armor && <div className={`text-[10px] ${
+                      isShibuya 
+                        ? 'text-neon-magenta' 
+                        : isSeireitei
+                          ? 'text-pink-300'
+                          : 'text-neon-cyan'
+                    }`}>+{player.equipped_armor.defense_bonus} DEF</div>}
                   </div>
                 </div>
               </div>
@@ -364,7 +450,9 @@ function App() {
           <section className={`backdrop-blur-md border rounded-xl p-5 shadow-2xl flex flex-col justify-between transition-all duration-300 ${
             isShibuya 
               ? 'bg-black/45 border-neon-magenta/20 hover:border-neon-magenta/40 hover:shadow-[0_8px_32px_rgba(255,0,127,0.05)]' 
-              : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
+              : isSeireitei
+                ? 'bg-black/45 border-pink-500/20 hover:border-pink-500/40 hover:shadow-[0_8px_32px_rgba(255,183,197,0.05)]'
+                : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
           }`}>
             <div>
               <h2 className="text-xl font-bold text-white border-l-4 border-neon-cyan pl-3 mb-4 uppercase tracking-wider">
@@ -373,15 +461,25 @@ function App() {
 
               {/* Interactive SVG/CSS Map Layout */}
               <div className={`relative w-full h-[220px] bg-black/45 border rounded-lg overflow-hidden mb-4 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)] transition-colors ${
-                inCombat ? 'border-red-500/35' : isShibuya ? 'border-neon-magenta/15' : 'border-white/10'
+                inCombat 
+                  ? 'border-red-500/35' 
+                  : isShibuya 
+                    ? 'border-neon-magenta/15' 
+                    : isSeireitei
+                      ? 'border-pink-500/15'
+                      : 'border-white/10'
               }`}>
                 {/* Grid backdrop */}
                 <div className={`absolute inset-0 bg-[linear-gradient(rgba(102,252,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none transition-all duration-500 ${
-                  isShibuya ? 'opacity-30' : 'opacity-100'
+                  isShibuya || isSeireitei ? 'opacity-30' : 'opacity-100'
                 }`}></div>
 
                 {isShibuya && (
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,127,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,0,127,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+                )}
+
+                {isSeireitei && (
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(236,72,153,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(236,72,153,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
                 )}
 
                 {/* Red warning grid overlay when in combat */}
@@ -402,7 +500,15 @@ function App() {
                           y1={`${loc.y}%`}
                           x2={`${target.x}%`}
                           y2={`${target.y}%`}
-                          stroke={inCombat ? "rgba(239, 68, 68, 0.15)" : isShibuya ? "rgba(255, 0, 127, 0.15)" : "rgba(102, 252, 241, 0.2)"}
+                          stroke={
+                            inCombat 
+                              ? "rgba(239, 68, 68, 0.15)" 
+                              : isShibuya 
+                                ? "rgba(255, 0, 127, 0.15)" 
+                                : isSeireitei
+                                  ? "rgba(236, 72, 153, 0.15)"
+                                  : "rgba(102, 252, 241, 0.2)"
+                          }
                           strokeWidth="2"
                           strokeDasharray="4 4"
                         />
@@ -432,7 +538,9 @@ function App() {
                             ? 'bg-red-500/20 border-red-500' 
                             : isShibuya 
                               ? 'bg-neon-magenta/20 border-neon-magenta' 
-                              : 'bg-neon-cyan/20 border-neon-cyan'
+                              : isSeireitei
+                                ? 'bg-pink-500/20 border-pink-500'
+                                : 'bg-neon-cyan/20 border-neon-cyan'
                         }`}></div>
                       ) : null}
 
@@ -443,11 +551,15 @@ function App() {
                             ? 'bg-red-500 border-white scale-110 shadow-[0_0_10px_#ef4444]'
                             : isShibuya
                               ? 'bg-neon-magenta border-white scale-110 shadow-[0_0_10px_#ff007f]'
-                              : 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
+                              : isSeireitei
+                                ? 'bg-pink-400 border-white scale-110 shadow-[0_0_10px_#f472b6]'
+                                : 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
                           : isConnected 
                             ? isShibuya 
                               ? 'bg-transparent border-neon-magenta hover:bg-neon-magenta/30 hover:scale-110' 
-                              : 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
+                              : isSeireitei
+                                ? 'bg-transparent border-pink-400 hover:bg-pink-400/30 hover:scale-110'
+                                : 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
                             : 'bg-transparent border-gray-700'
                       }`}></div>
 
@@ -483,10 +595,18 @@ function App() {
               {/* Current Location Details Banner */}
               {!inCombat && currentLocDetails && (
                 <div className={`rounded-lg p-3 mb-4 text-left border transition-all duration-500 ${
-                  isShibuya ? 'bg-neon-magenta/5 border-neon-magenta/15' : 'bg-neon-cyan/5 border-neon-cyan/15'
+                  isShibuya 
+                    ? 'bg-neon-magenta/5 border-neon-magenta/15' 
+                    : isSeireitei
+                      ? 'bg-pink-500/5 border-pink-500/15'
+                      : 'bg-neon-cyan/5 border-neon-cyan/15'
                 }`}>
                   <span className={`text-[10px] uppercase font-bold tracking-wider transition-all duration-500 ${
-                    isShibuya ? 'text-neon-magenta' : 'text-neon-cyan'
+                    isShibuya 
+                      ? 'text-neon-magenta' 
+                      : isSeireitei
+                        ? 'text-pink-300'
+                        : 'text-neon-cyan'
                   }`}>Sector Overview</span>
                   <h3 className="text-sm font-black text-white">{currentLocDetails.name}</h3>
                   <p className="text-xs text-gray-400 mt-1 leading-relaxed">{currentLocDetails.description}</p>
@@ -502,7 +622,11 @@ function App() {
                       <div 
                         key={idx} 
                         className={`bg-white/5 border border-white/10 rounded-lg p-2.5 text-center flex flex-col justify-between min-h-[90px] cursor-pointer transition-all duration-200 hover:bg-white/10 ${
-                          isShibuya ? 'hover:border-neon-magenta/40' : 'hover:border-neon-cyan/40'
+                          isShibuya 
+                            ? 'hover:border-neon-magenta/40' 
+                            : isSeireitei
+                              ? 'hover:border-pink-500/40'
+                              : 'hover:border-neon-cyan/40'
                         } hover:-translate-y-0.5`} 
                         onClick={() => useItem(item.name, item.item_type)}
                       >
@@ -558,7 +682,9 @@ function App() {
                     className={`flex-1 text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer transition-all duration-200 ${
                       isShibuya
                         ? 'bg-gradient-to-br from-neon-magenta to-neon-purple shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)]'
-                        : 'bg-gradient-to-br from-neon-cyan to-blue-600 shadow-[0_4px_15px_rgba(102,252,241,0.2)] hover:shadow-[0_6px_20px_rgba(102,252,241,0.4)]'
+                        : isSeireitei
+                          ? 'bg-gradient-to-br from-pink-500 to-indigo-600 shadow-[0_4px_15px_rgba(236,72,153,0.3)] hover:shadow-[0_6px_20px_rgba(236,72,153,0.5)]'
+                          : 'bg-gradient-to-br from-neon-cyan to-blue-600 shadow-[0_4px_15px_rgba(102,252,241,0.2)] hover:shadow-[0_6px_20px_rgba(102,252,241,0.4)]'
                     } hover:-translate-y-0.5`} 
                     onClick={exploreDungeon}
                   >

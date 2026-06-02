@@ -185,10 +185,15 @@ def load_game():
         raise HTTPException(status_code=500, detail=f"Error loading game: {str(e)}")
 
 locations_db = {
-    "Shibuya Station": Location("Shibuya Station", "The bustling intersection of Tokyo, now empty and haunted by curses.", "Shibuya", 20, 30, ["Graveyard", "Cursed Site"]),
-    "Graveyard": Location("Graveyard", "A dark graveyard where hollows and curses feed on residual spiritual energy.", "Shibuya", 15, 65, ["Shibuya Station", "Alleys"]),
-    "Cursed Site": Location("Cursed Site", "An active cursed area. You can feel Sukuna's energy lingering here.", "Shibuya", 45, 40, ["Shibuya Station", "Alleys"]),
-    "Alleys": Location("Alleys", "Narrow dark alleys. High probability of low-tier curses spawning.", "Shibuya", 30, 80, ["Graveyard", "Cursed Site"]),
+    "Shibuya Station": Location("Shibuya Station", "The bustling intersection of Tokyo, now empty and haunted by curses.", "Shibuya", 15, 30, ["Graveyard", "Cursed Site", "Senkaimon"]),
+    "Graveyard": Location("Graveyard", "A dark graveyard where hollows and curses feed on residual spiritual energy.", "Shibuya", 10, 65, ["Shibuya Station", "Alleys"]),
+    "Cursed Site": Location("Cursed Site", "An active cursed area. You can feel Sukuna's energy lingering here.", "Shibuya", 35, 40, ["Shibuya Station", "Alleys"]),
+    "Alleys": Location("Alleys", "Narrow dark alleys. High probability of low-tier curses spawning.", "Shibuya", 25, 80, ["Graveyard", "Cursed Site"]),
+    
+    "Senkaimon": Location("Senkaimon", "The sliding wooden gateway connecting the human world to the Soul Society.", "Soul Society", 50, 30, ["Shibuya Station", "Rukongai District", "Gotei 13 Barracks"]),
+    "Rukongai District": Location("Rukongai District", "The outer districts where souls live. Peaceful but vulnerable to stray hollows.", "Soul Society", 62, 65, ["Senkaimon", "Execution Hill"]),
+    "Gotei 13 Barracks": Location("Gotei 13 Barracks", "The military division headquarters. Soul Reapers train and mobilize here.", "Soul Society", 75, 20, ["Senkaimon", "Execution Hill"]),
+    "Execution Hill": Location("Execution Hill", "Sokyoku Hill. A high peak where executions take place under the giant phoenix stand.", "Soul Society", 88, 50, ["Rukongai District", "Gotei 13 Barracks"]),
 }
 
 class MoveRequest(BaseModel):
@@ -224,7 +229,11 @@ def move_player(req: MoveRequest):
         "Shibuya Station": 0.20,
         "Graveyard": 0.60,
         "Cursed Site": 0.70,
-        "Alleys": 0.50
+        "Alleys": 0.50,
+        "Senkaimon": 0.30,
+        "Rukongai District": 0.40,
+        "Gotei 13 Barracks": 0.25,
+        "Execution Hill": 0.50
     }
     
     rate = encounter_rates.get(dest, 0.30)
@@ -244,6 +253,20 @@ def move_player(req: MoveRequest):
             ],
             "Alleys": [
                 {"name": "Low-grade Curse", "hp": 35, "atk": 7, "xp": 20, "gold": 8}
+            ],
+            "Senkaimon": [
+                {"name": "Gatekeeper Jidanbo", "hp": 90, "atk": 14, "xp": 40, "gold": 20}
+            ],
+            "Rukongai District": [
+                {"name": "Stray Hollow", "hp": 50, "atk": 10, "xp": 30, "gold": 15},
+                {"name": "Rogue Shinigami", "hp": 75, "atk": 13, "xp": 35, "gold": 18}
+            ],
+            "Gotei 13 Barracks": [
+                {"name": "Squad Member", "hp": 80, "atk": 15, "xp": 45, "gold": 20},
+                {"name": "Squad Lieutenant", "hp": 130, "atk": 22, "xp": 70, "gold": 40}
+            ],
+            "Execution Hill": [
+                {"name": "Sokyoku Sentinel", "hp": 160, "atk": 25, "xp": 100, "gold": 50}
             ]
         }
         

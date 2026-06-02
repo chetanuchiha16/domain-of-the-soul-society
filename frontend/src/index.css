@@ -11,6 +11,9 @@
   --color-energy-color: #00bcd4;
   --color-xp-color: #8bc34a;
   
+  --color-sakura-pink: #ffb7c5;
+  --color-seireitei-blue: #00e5ff;
+  
   --font-orbitron: 'Orbitron', sans-serif;
   --font-outfit: 'Outfit', sans-serif;
 }
@@ -45,6 +48,30 @@ h1, h2, h3, .font-orbitron {
 /* Cursed Shibuya Glow */
 .shibuya-neon-text {
   text-shadow: 0 0 5px rgba(255, 0, 127, 0.6), 0 0 15px rgba(255, 0, 127, 0.4);
+}
+
+/* Seireitei Sakura Vibe text glow */
+.seireitei-neon-text {
+  text-shadow: 0 0 8px rgba(255, 183, 197, 0.65), 0 0 20px rgba(255, 183, 197, 0.4);
+}
+
+/* Sakura falling animation details */
+@keyframes sakura-fall {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.8; }
+  90% { opacity: 0.8; }
+  100% { transform: translateY(105vh) rotate(360deg); opacity: 0; }
+}
+
+.sakura-petal {
+  position: absolute;
+  background-color: var(--color-sakura-pink);
+  border-radius: 150% 0 150% 150%;
+  transform: rotate(45deg);
+  opacity: 0.6;
+  pointer-events: none;
+  z-index: 1;
+  animation: sakura-fall 10s linear infinite;
 }
 
 /* Custom scrollbars */
