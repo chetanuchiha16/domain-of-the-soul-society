@@ -214,6 +214,7 @@ function App() {
   const currentRegion = currentLocDetails?.region || "Shibuya"
   const isShibuya = currentRegion.toLowerCase() === 'shibuya'
   const isSeireitei = currentRegion.toLowerCase() === 'soul society'
+  const isHuecoMundo = currentRegion.toLowerCase() === 'hueco mundo'
 
   return (
     <div className={`min-h-screen w-full relative transition-all duration-500 ${
@@ -221,7 +222,9 @@ function App() {
         ? 'shibuya-scanlines bg-[#0a0a0f] text-gray-200' 
         : isSeireitei
           ? 'bg-[#060814] text-[#d1d5db]'
-          : 'bg-bg-dark text-[#c5c6c7]'
+          : isHuecoMundo
+            ? 'bg-[#0c0d12] text-[#e7e5e4]'
+            : 'bg-bg-dark text-[#c5c6c7]'
     }`}>
       {/* Floating Sakura Petals for Soul Society theme */}
       {isSeireitei && (
@@ -235,6 +238,18 @@ function App() {
         </div>
       )}
 
+      {/* Floating Sandstorm Particles for Hueco Mundo theme */}
+      {isHuecoMundo && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          <div className="sand-particle" style={{ left: '5%', top: '10%', animationDelay: '0s', width: '4px', height: '4px' }}></div>
+          <div className="sand-particle" style={{ left: '22%', top: '35%', animationDelay: '1.8s', width: '6px', height: '5px' }}></div>
+          <div className="sand-particle" style={{ left: '45%', top: '15%', animationDelay: '3.5s', width: '3px', height: '3px' }}></div>
+          <div className="sand-particle" style={{ left: '65%', top: '55%', animationDelay: '0.8s', width: '5px', height: '4px' }}></div>
+          <div className="sand-particle" style={{ left: '78%', top: '22%', animationDelay: '5.2s', width: '7px', height: '6px' }}></div>
+          <div className="sand-particle" style={{ left: '92%', top: '48%', animationDelay: '2.4s', width: '4px', height: '4px' }}></div>
+        </div>
+      )}
+
       <div className="max-w-[1200px] w-full mx-auto p-5 box-border relative z-10">
         
         {/* Dynamic header style based on active zone */}
@@ -243,14 +258,18 @@ function App() {
             ? 'border-neon-magenta/25' 
             : isSeireitei
               ? 'border-pink-500/20'
-              : 'border-neon-cyan/20'
+              : isHuecoMundo
+                ? 'border-amber-500/20'
+                : 'border-neon-cyan/20'
         }`}>
           <h1 className={`text-4xl md:text-5xl font-black uppercase tracking-widest transition-all duration-500 my-2 ${
             isShibuya 
               ? 'text-white shibuya-neon-text' 
               : isSeireitei
                 ? 'text-white seireitei-neon-text'
-                : 'text-white [text-shadow:0_0_10px_rgba(102,252,241,0.3),0_0_20px_rgba(255,0,127,0.2)]'
+                : isHuecoMundo
+                  ? 'text-white hueco-neon-text'
+                  : 'text-white [text-shadow:0_0_10px_rgba(102,252,241,0.3),0_0_20px_rgba(255,0,127,0.2)]'
           }`}>
             Domain of the Soul Society
           </h1>
@@ -259,10 +278,13 @@ function App() {
               ? 'text-neon-magenta font-semibold' 
               : isSeireitei
                 ? 'text-pink-300 font-semibold'
-                : 'text-neon-cyan'
+                : isHuecoMundo
+                  ? 'text-yellow-400 font-semibold'
+                  : 'text-neon-cyan'
           }`}>
             {isShibuya && '⚠️ SECTOR LOCKDOWN: SHIBUYA DISTRICT ACTIVE'}
             {isSeireitei && '🌸 SPIRITUAL PRESSURE AREA: SEIREITEI / SOUL SOCIETY'}
+            {isHuecoMundo && '🌙 HOLLOW INFESTATION AREA: LAS NOCHES / HUECO MUNDO'}
           </div>
         </header>
 
@@ -273,14 +295,18 @@ function App() {
               ? 'bg-black/45 border-neon-magenta/20 hover:border-neon-magenta/40 hover:shadow-[0_8px_32px_rgba(255,0,127,0.05)]' 
               : isSeireitei
                 ? 'bg-black/45 border-pink-500/20 hover:border-pink-500/40 hover:shadow-[0_8px_32px_rgba(255,183,197,0.05)]'
-                : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
+                : isHuecoMundo
+                  ? 'bg-black/45 border-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_8px_32px_rgba(245,158,11,0.05)]'
+                  : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
           }`}>
             <h2 className={`text-xl font-bold text-white border-l-4 pl-3 mb-5 uppercase tracking-wider transition-all duration-500 ${
               isShibuya 
                 ? 'border-neon-magenta text-white' 
                 : isSeireitei
                   ? 'border-pink-400 text-white'
-                  : 'border-neon-cyan'
+                  : isHuecoMundo
+                    ? 'border-yellow-500 text-white'
+                    : 'border-neon-cyan'
             }`}>
               Soul Status
             </h2>
@@ -292,7 +318,9 @@ function App() {
                   ? 'text-neon-magenta' 
                   : isSeireitei
                     ? 'text-pink-300'
-                    : 'text-neon-cyan'
+                    : isHuecoMundo
+                      ? 'text-yellow-400'
+                      : 'text-neon-cyan'
               }`}>
                 RANK: Soul Reaper (LVL {player.level})
               </span>
@@ -309,7 +337,9 @@ function App() {
                   className={`h-full rounded-full transition-all duration-300 ${
                     isSeireitei 
                       ? 'bg-gradient-to-r from-pink-700 to-pink-400 shadow-[0_0_8px_rgba(236,72,153,0.5)]'
-                      : 'bg-gradient-to-r from-red-800 to-hp-color shadow-[0_0_8px_rgba(255,62,62,0.5)]'
+                      : isHuecoMundo
+                        ? 'bg-gradient-to-r from-amber-700 to-yellow-400 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                        : 'bg-gradient-to-r from-red-800 to-hp-color shadow-[0_0_8px_rgba(255,62,62,0.5)]'
                   }`} 
                   style={{ width: `${hpPct}%` }}
                 ></div>
@@ -352,7 +382,9 @@ function App() {
                     ? 'text-neon-magenta' 
                     : isSeireitei
                       ? 'text-pink-300'
-                      : 'text-neon-cyan'
+                      : isHuecoMundo
+                        ? 'text-yellow-400'
+                        : 'text-neon-cyan'
                 }`}>{player.attack_power}</div>
                 <div className="text-[10px] uppercase text-gray-500 mt-1">Attack Power</div>
               </div>
@@ -362,7 +394,9 @@ function App() {
                     ? 'text-neon-magenta' 
                     : isSeireitei
                       ? 'text-pink-300'
-                      : 'text-neon-cyan'
+                      : isHuecoMundo
+                        ? 'text-yellow-400'
+                        : 'text-neon-cyan'
                 }`}>{player.gold}</div>
                 <div className="text-[10px] uppercase text-gray-500 mt-1">Gold Coins</div>
               </div>
@@ -381,7 +415,9 @@ function App() {
                           ? 'bg-neon-magenta/10 border-neon-magenta/20 text-neon-magenta' 
                           : isSeireitei
                             ? 'bg-pink-500/10 border-pink-500/20 text-pink-300'
-                            : 'bg-neon-cyan/10 border-neon-cyan/20 text-neon-cyan'
+                            : isHuecoMundo
+                              ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-350'
+                              : 'bg-neon-cyan/10 border-neon-cyan/20 text-neon-cyan'
                       }`}
                     >
                       🔮 {s}
@@ -403,7 +439,9 @@ function App() {
                       ? 'bg-neon-magenta/5 border-neon-magenta/30' 
                       : isSeireitei
                         ? 'bg-pink-500/5 border-pink-500/30'
-                        : 'bg-neon-cyan/5 border-neon-cyan/30' 
+                        : isHuecoMundo
+                          ? 'bg-yellow-550/5 border-yellow-500/30'
+                          : 'bg-neon-cyan/5 border-neon-cyan/30' 
                     : 'bg-violet-500/5 border-dashed border-violet-500/30'
                 }`}>
                   <div className="text-3xl">⚔️</div>
@@ -415,7 +453,9 @@ function App() {
                         ? 'text-neon-magenta' 
                         : isSeireitei
                           ? 'text-pink-300'
-                          : 'text-neon-cyan'
+                          : isHuecoMundo
+                            ? 'text-yellow-400'
+                            : 'text-neon-cyan'
                     }`}>+{player.equipped_weapon.attack_bonus} ATK</div>}
                   </div>
                 </div>
@@ -426,7 +466,9 @@ function App() {
                       ? 'bg-neon-magenta/5 border-neon-magenta/30' 
                       : isSeireitei
                         ? 'bg-pink-500/5 border-pink-500/30'
-                        : 'bg-neon-cyan/5 border-neon-cyan/30' 
+                        : isHuecoMundo
+                          ? 'bg-yellow-550/5 border-yellow-500/30'
+                          : 'bg-neon-cyan/5 border-neon-cyan/30' 
                     : 'bg-violet-500/5 border-dashed border-violet-500/30'
                 }`}>
                   <div className="text-3xl">🛡️</div>
@@ -438,7 +480,9 @@ function App() {
                         ? 'text-neon-magenta' 
                         : isSeireitei
                           ? 'text-pink-300'
-                          : 'text-neon-cyan'
+                          : isHuecoMundo
+                            ? 'text-yellow-400'
+                            : 'text-neon-cyan'
                     }`}>+{player.equipped_armor.defense_bonus} DEF</div>}
                   </div>
                 </div>
@@ -452,7 +496,9 @@ function App() {
               ? 'bg-black/45 border-neon-magenta/20 hover:border-neon-magenta/40 hover:shadow-[0_8px_32px_rgba(255,0,127,0.05)]' 
               : isSeireitei
                 ? 'bg-black/45 border-pink-500/20 hover:border-pink-500/40 hover:shadow-[0_8px_32px_rgba(255,183,197,0.05)]'
-                : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
+                : isHuecoMundo
+                  ? 'bg-black/45 border-amber-500/20 hover:border-amber-500/40 hover:shadow-[0_8px_32px_rgba(245,158,11,0.05)]'
+                  : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
           }`}>
             <div>
               <h2 className="text-xl font-bold text-white border-l-4 border-neon-cyan pl-3 mb-4 uppercase tracking-wider">
@@ -467,11 +513,13 @@ function App() {
                     ? 'border-neon-magenta/15' 
                     : isSeireitei
                       ? 'border-pink-500/15'
-                      : 'border-white/10'
+                      : isHuecoMundo
+                        ? 'border-amber-500/15'
+                        : 'border-white/10'
               }`}>
                 {/* Grid backdrop */}
                 <div className={`absolute inset-0 bg-[linear-gradient(rgba(102,252,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none transition-all duration-500 ${
-                  isShibuya || isSeireitei ? 'opacity-30' : 'opacity-100'
+                  isShibuya || isSeireitei || isHuecoMundo ? 'opacity-30' : 'opacity-100'
                 }`}></div>
 
                 {isShibuya && (
@@ -480,6 +528,10 @@ function App() {
 
                 {isSeireitei && (
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(236,72,153,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(236,72,153,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+                )}
+
+                {isHuecoMundo && (
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(245,158,11,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
                 )}
 
                 {/* Red warning grid overlay when in combat */}
@@ -507,7 +559,9 @@ function App() {
                                 ? "rgba(255, 0, 127, 0.15)" 
                                 : isSeireitei
                                   ? "rgba(236, 72, 153, 0.15)"
-                                  : "rgba(102, 252, 241, 0.2)"
+                                  : isHuecoMundo
+                                    ? "rgba(245, 158, 11, 0.15)"
+                                    : "rgba(102, 252, 241, 0.2)"
                           }
                           strokeWidth="2"
                           strokeDasharray="4 4"
@@ -540,7 +594,9 @@ function App() {
                               ? 'bg-neon-magenta/20 border-neon-magenta' 
                               : isSeireitei
                                 ? 'bg-pink-500/20 border-pink-500'
-                                : 'bg-neon-cyan/20 border-neon-cyan'
+                                : isHuecoMundo
+                                  ? 'bg-yellow-500/20 border-yellow-500'
+                                  : 'bg-neon-cyan/20 border-neon-cyan'
                         }`}></div>
                       ) : null}
 
@@ -553,13 +609,17 @@ function App() {
                               ? 'bg-neon-magenta border-white scale-110 shadow-[0_0_10px_#ff007f]'
                               : isSeireitei
                                 ? 'bg-pink-400 border-white scale-110 shadow-[0_0_10px_#f472b6]'
-                                : 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
+                                : isHuecoMundo
+                                  ? 'bg-yellow-400 border-white scale-110 shadow-[0_0_10px_#facc15]'
+                                  : 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
                           : isConnected 
                             ? isShibuya 
                               ? 'bg-transparent border-neon-magenta hover:bg-neon-magenta/30 hover:scale-110' 
                               : isSeireitei
                                 ? 'bg-transparent border-pink-400 hover:bg-pink-400/30 hover:scale-110'
-                                : 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
+                                : isHuecoMundo
+                                  ? 'bg-transparent border-yellow-400 hover:bg-yellow-400/30 hover:scale-110'
+                                  : 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
                             : 'bg-transparent border-gray-700'
                       }`}></div>
 
@@ -599,14 +659,18 @@ function App() {
                     ? 'bg-neon-magenta/5 border-neon-magenta/15' 
                     : isSeireitei
                       ? 'bg-pink-500/5 border-pink-500/15'
-                      : 'bg-neon-cyan/5 border-neon-cyan/15'
+                      : isHuecoMundo
+                        ? 'bg-amber-500/5 border-amber-500/15'
+                        : 'bg-neon-cyan/5 border-neon-cyan/15'
                 }`}>
                   <span className={`text-[10px] uppercase font-bold tracking-wider transition-all duration-500 ${
                     isShibuya 
                       ? 'text-neon-magenta' 
                       : isSeireitei
                         ? 'text-pink-300'
-                        : 'text-neon-cyan'
+                        : isHuecoMundo
+                          ? 'text-yellow-400'
+                          : 'text-neon-cyan'
                   }`}>Sector Overview</span>
                   <h3 className="text-sm font-black text-white">{currentLocDetails.name}</h3>
                   <p className="text-xs text-gray-400 mt-1 leading-relaxed">{currentLocDetails.description}</p>
@@ -626,7 +690,9 @@ function App() {
                             ? 'hover:border-neon-magenta/40' 
                             : isSeireitei
                               ? 'hover:border-pink-500/40'
-                              : 'hover:border-neon-cyan/40'
+                              : isHuecoMundo
+                                ? 'hover:border-amber-500/40'
+                                : 'hover:border-neon-cyan/40'
                         } hover:-translate-y-0.5`} 
                         onClick={() => useItem(item.name, item.item_type)}
                       >
@@ -684,7 +750,9 @@ function App() {
                         ? 'bg-gradient-to-br from-neon-magenta to-neon-purple shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)]'
                         : isSeireitei
                           ? 'bg-gradient-to-br from-pink-500 to-indigo-600 shadow-[0_4px_15px_rgba(236,72,153,0.3)] hover:shadow-[0_6px_20px_rgba(236,72,153,0.5)]'
-                          : 'bg-gradient-to-br from-neon-cyan to-blue-600 shadow-[0_4px_15px_rgba(102,252,241,0.2)] hover:shadow-[0_6px_20px_rgba(102,252,241,0.4)]'
+                          : isHuecoMundo
+                            ? 'bg-gradient-to-br from-yellow-600 to-amber-800 shadow-[0_4px_15px_rgba(234,179,8,0.3)] hover:shadow-[0_6px_20px_rgba(234,179,8,0.5)]'
+                            : 'bg-gradient-to-br from-neon-cyan to-blue-600 shadow-[0_4px_15px_rgba(102,252,241,0.2)] hover:shadow-[0_6px_20px_rgba(102,252,241,0.4)]'
                     } hover:-translate-y-0.5`} 
                     onClick={exploreDungeon}
                   >

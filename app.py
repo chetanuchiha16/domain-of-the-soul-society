@@ -190,10 +190,15 @@ locations_db = {
     "Cursed Site": Location("Cursed Site", "An active cursed area. You can feel Sukuna's energy lingering here.", "Shibuya", 35, 40, ["Shibuya Station", "Alleys"]),
     "Alleys": Location("Alleys", "Narrow dark alleys. High probability of low-tier curses spawning.", "Shibuya", 25, 80, ["Graveyard", "Cursed Site"]),
     
-    "Senkaimon": Location("Senkaimon", "The sliding wooden gateway connecting the human world to the Soul Society.", "Soul Society", 50, 30, ["Shibuya Station", "Rukongai District", "Gotei 13 Barracks"]),
+    "Senkaimon": Location("Senkaimon", "The sliding wooden gateway connecting the human world to the Soul Society.", "Soul Society", 50, 30, ["Shibuya Station", "Rukongai District", "Gotei 13 Barracks", "Garganta Crossing"]),
     "Rukongai District": Location("Rukongai District", "The outer districts where souls live. Peaceful but vulnerable to stray hollows.", "Soul Society", 62, 65, ["Senkaimon", "Execution Hill"]),
     "Gotei 13 Barracks": Location("Gotei 13 Barracks", "The military division headquarters. Soul Reapers train and mobilize here.", "Soul Society", 75, 20, ["Senkaimon", "Execution Hill"]),
     "Execution Hill": Location("Execution Hill", "Sokyoku Hill. A high peak where executions take place under the giant phoenix stand.", "Soul Society", 88, 50, ["Rukongai District", "Gotei 13 Barracks"]),
+    
+    "Garganta Crossing": Location("Garganta Crossing", "A dark, void-like dimensional tear between worlds.", "Hueco Mundo", 50, 70, ["Senkaimon", "Las Noches Dunes"]),
+    "Las Noches Dunes": Location("Las Noches Dunes", "An endless desert of white sand under a perpetual crescent moon.", "Hueco Mundo", 70, 85, ["Garganta Crossing", "Menos Forest", "Las Noches Throne Room"]),
+    "Menos Forest": Location("Menos Forest", "The subterranean forest below the desert dunes, crawling with Menos-class hollows.", "Hueco Mundo", 82, 92, ["Las Noches Dunes", "Las Noches Throne Room"]),
+    "Las Noches Throne Room": Location("Las Noches Throne Room", "The grand dome fortress. Aizen's vacant throne resides at the center.", "Hueco Mundo", 90, 75, ["Las Noches Dunes", "Menos Forest"]),
 }
 
 class MoveRequest(BaseModel):
@@ -233,7 +238,11 @@ def move_player(req: MoveRequest):
         "Senkaimon": 0.30,
         "Rukongai District": 0.40,
         "Gotei 13 Barracks": 0.25,
-        "Execution Hill": 0.50
+        "Execution Hill": 0.50,
+        "Garganta Crossing": 0.35,
+        "Las Noches Dunes": 0.45,
+        "Menos Forest": 0.60,
+        "Las Noches Throne Room": 0.50
     }
     
     rate = encounter_rates.get(dest, 0.30)
@@ -267,6 +276,19 @@ def move_player(req: MoveRequest):
             ],
             "Execution Hill": [
                 {"name": "Sokyoku Sentinel", "hp": 160, "atk": 25, "xp": 100, "gold": 50}
+            ],
+            "Garganta Crossing": [
+                {"name": "Hollow Scout", "hp": 80, "atk": 16, "xp": 50, "gold": 25}
+            ],
+            "Las Noches Dunes": [
+                {"name": "Menos Grande", "hp": 180, "atk": 24, "xp": 120, "gold": 60},
+                {"name": "Stray Arrancar", "hp": 120, "atk": 20, "xp": 90, "gold": 45}
+            ],
+            "Menos Forest": [
+                {"name": "Hollow Adjuchas", "hp": 200, "atk": 28, "xp": 150, "gold": 75}
+            ],
+            "Las Noches Throne Room": [
+                {"name": "Espada Replica", "hp": 250, "atk": 32, "xp": 200, "gold": 100}
             ]
         }
         

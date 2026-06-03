@@ -14,6 +14,9 @@
   --color-sakura-pink: #ffb7c5;
   --color-seireitei-blue: #00e5ff;
   
+  --color-hueco-yellow: #ffee58;
+  --color-hueco-gold: #f59e0b;
+  
   --font-orbitron: 'Orbitron', sans-serif;
   --font-outfit: 'Outfit', sans-serif;
 }
@@ -55,6 +58,11 @@ h1, h2, h3, .font-orbitron {
   text-shadow: 0 0 8px rgba(255, 183, 197, 0.65), 0 0 20px rgba(255, 183, 197, 0.4);
 }
 
+/* Hueco Mundo Desert Vibe text glow */
+.hueco-neon-text {
+  text-shadow: 0 0 8px rgba(254, 240, 138, 0.6), 0 0 20px rgba(245, 158, 11, 0.45);
+}
+
 /* Sakura falling animation details */
 @keyframes sakura-fall {
   0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
@@ -72,6 +80,23 @@ h1, h2, h3, .font-orbitron {
   pointer-events: none;
   z-index: 1;
   animation: sakura-fall 10s linear infinite;
+}
+
+/* Hueco Mundo Sandstorm drift animation */
+@keyframes sand-drift {
+  0% { transform: translate(-20px, -20px) rotate(0deg); opacity: 0; }
+  10% { opacity: 0.4; }
+  90% { opacity: 0.4; }
+  100% { transform: translate(105vw, 35vh) rotate(180deg); opacity: 0; }
+}
+
+.sand-particle {
+  position: absolute;
+  background-color: rgba(254, 240, 138, 0.25);
+  border-radius: 40% 60% 70% 30%;
+  pointer-events: none;
+  z-index: 1;
+  animation: sand-drift 7s linear infinite;
 }
 
 /* Custom scrollbars */
