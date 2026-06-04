@@ -124,3 +124,19 @@ h1, h2, h3, .font-orbitron {
 .cursed-pulse {
   animation: cursed-flicker 0.15s infinite;
 }
+
+/* Dialogue Box slide-up animation */
+@keyframes slide-up {
+  from {
+    transform: translate(-50%, 100px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

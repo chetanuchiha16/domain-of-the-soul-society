@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { DialogueBox, DialogueLine } from './DialogueBox'
 
 const API_BASE = 'http://localhost:8000/api'
 
@@ -63,6 +64,84 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [logs, setLogs] = useState<string[]>(["Connecting to Soul Society backend..."])
+  const [dialogueQueue, setDialogueQueue] = useState<DialogueLine[] | null>(null)
+
+  const triggerLocationDialogue = (dest: string, enemyName?: string) => {
+    const desc = mapData[dest]?.description || `You have traveled to ${dest}.`;
+    const lines: DialogueLine[] = [];
+
+    if (dest === "Senkaimon") {
+      lines.push({
+        speaker: "Sosuke Aizen",
+        avatar: "aizen",
+        text: "Yokoso watashi no Soul Society ye... Welcome to my Soul Society. You stand at the threshold of real power."
+      });
+    } else if (dest === "Execution Hill") {
+      lines.push({
+        speaker: "Shunsui Kyoraku",
+        avatar: "shunsui",
+        text: "Bankai Katen Kyōkotsu: Karamatsu Shinjū. It seems you have ventured too close to the Sokyoku Hill, traveler. Be careful of the high winds."
+      });
+    } else {
+      lines.push({
+        speaker: "Narrator",
+        avatar: "narrator",
+        text: `${desc}`
+      });
+    }
+
+    if (enemyName) {
+      lines.push({
+        speaker: "System Alert",
+        avatar: "narrator",
+        text: `⚠️ WARNING: A hostile ${enemyName} has emerged! Prepare for battle.`
+      });
+    }
+
+    setDialogueQueue(lines);
+  };
+
+  const triggerExploreDialogue = (found: string, logMsg?: string) => {
+    const lines: DialogueLine[] = [];
+    if (found === "gojo") {
+      lines.push({
+        speaker: "Satoru Gojo",
+        avatar: "gojo",
+        text: "Daijoubu desho datte kimi yowai mo. Don't worry, you're weak after all! Feel free to invoke my Infinite Void in combat."
+      });
+    } else if (found === "shunsui") {
+      lines.push({
+        speaker: "Shunsui Kyoraku",
+        avatar: "shunsui",
+        text: "Bankai Katen Kyōkotsu: Karamatsu Shinjū. My shadow hides many secrets, traveler. Call upon me when you need a drink... or a blade."
+      });
+    } else if (found === "⚔") {
+      lines.push({
+        speaker: "Narrator",
+        avatar: "narrator",
+        text: `You search the dust and discover a Zanpakuto! An aura of cold spirit energy surrounds the blade.`
+      });
+    } else if (found === "🛡") {
+      lines.push({
+        speaker: "Narrator",
+        avatar: "narrator",
+        text: `Hidden beneath a layer of cursed stones, you find the Shinobi Shozoku armor. It feels lighter than air.`
+      });
+    } else if (found === "health_potion") {
+      lines.push({
+        speaker: "Narrator",
+        avatar: "narrator",
+        text: `You find a Health Potion. Its bubbling green liquid hums with positive energy.`
+      });
+    } else {
+      lines.push({
+        speaker: "Narrator",
+        avatar: "narrator",
+        text: logMsg || "You search the area but find nothing of interest."
+      });
+    }
+    setDialogueQueue(lines);
+  };
 
   const addLog = (msg: string) => {
     setLogs(prev => [msg, ...prev].slice(0, 50))
@@ -113,15 +192,24 @@ function App() {
         const errData = await res.json() as { detail?: string }
         throw new Error(errData.detail || "Action failed")
       }
-      const data = await res.json() as { state?: GameStateData; log?: string; message?: string }
+      const data = await res.json() as { state?: GameStateData; log?: string; message?: string; found?: string }
       if (data.state) {
         setGameState(data.state)
       } else {
         await fetchState()
       }
-      if (successMsg) addLog(successMsg)
-      else if (data.log) addLog(data.log)
-      else if (data.message) addLog(data.message)
+
+      if (endpoint === 'player/move') {
+        const dest = (body as any).destination
+        const enemyName = data.state?.combat?.enemies?.[0]?.name
+        triggerLocationDialogue(dest, enemyName)
+      } else if (endpoint === 'explore/dungeon') {
+        triggerExploreDialogue(data.found || '', data.log)
+      } else {
+        if (successMsg) addLog(successMsg)
+        else if (data.log) addLog(data.log)
+        else if (data.message) addLog(data.message)
+      }
     } catch (err) {
       if (err instanceof Error) {
         addLog(`Error: ${err.message}`)
@@ -145,6 +233,13 @@ function App() {
         const data = await res.json() as GameStateData
         setGameState(data)
         addLog(`Re-entered the Soul Society as ${name}!`)
+        setDialogueQueue([
+          {
+            speaker: "Sosuke Aizen",
+            avatar: "aizen",
+            text: `Yokoso watashi no Soul Society ye, ${name}... Welcome to my Soul Society. Let us see if your soul is strong enough to survive the spiritual pressures here.`
+          }
+        ])
       } catch (err) {
         if (err instanceof Error) {
           addLog(`Reset failed: ${err.message}`)
@@ -785,6 +880,12 @@ function App() {
           </section>
         </div>
       </div>
+      {dialogueQueue && (
+        <DialogueBox 
+          lines={dialogueQueue} 
+          onComplete={() => setDialogueQueue(null)} 
+        />
+      )}
     </div>
   )
 }
