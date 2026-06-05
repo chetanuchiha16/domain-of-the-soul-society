@@ -102,6 +102,7 @@ def get_state():
 @app.post("/api/player/reset")
 def reset_player(name: Optional[str] = "Ichigo"):
     state.player = Player(name=name)
+    state.player.gold = 100
     state.current_enemies = []
     state.combat_log = ["A new journey begins."]
     return get_state()
@@ -381,6 +382,76 @@ def combat_run():
             
         state.combat_log = log + state.combat_log
         return {"message": "Escape failed", "state": get_state()}
+# Urahara Shop Catalog
+shop_catalog = {
+    "health_potion": Consumable("Health Potion", "Restores 50 HP", heal_hp=50, restore_energy=0, value=15),
+    "spirit_pill": Consumable("Spirit Pill", "Restores 40 Reiryoku", heal_hp=0, restore_energy=40, value=25),
+    "training_sword": Weapon("Wooden Shinai", "Basic training sword. Light but weak.", attack_bonus=5, value=30),
+    "steel_katana": Weapon("Steel Katana", "A sharp steel katana forged in the human world.", attack_bonus=15, value=80),
+    "asauchi": Weapon("Asauchi", "A nameless Zanpakuto. Awakens your inner spirit energy.", attack_bonus=35, value=180),
+    "leather_vest": Armor("Leather Vest", "Standard leather chest protection.", defense_bonus=3, value=25),
+    "shinigami_robe": Armor("Shinigami Robe", "Standard black shihakusho. Offers spiritual defense.", defense_bonus=10, value=75),
+    "captain_haori": Armor("Captain's Haori", "A white haori worn by Gotei 13 captains. Greatly wards off physical damage.", defense_bonus=22, value=160),
+}
+
+class BuyRequest(BaseModel):
+    item_name: str
+
+class SellRequest(BaseModel):
+    item_name: str
+
+@app.get("/api/shop/items")
+def get_shop_items():
+    return [item.to_dict() for item in shop_catalog.values()]
+
+@app.post("/api/shop/buy")
+def buy_item(req: BuyRequest):
+    p = state.player
+    target_item = None
+    for item in shop_catalog.values():
+        if item.name.lower() == req.item_name.lower():
+            target_item = item
+            break
+            
+    if not target_item:
+        raise HTTPException(status_code=404, detail="Item not found in Urahara Shop")
+        
+    if p.gold < target_item.value:
+        raise HTTPException(status_code=400, detail="Not enough gold to purchase this item")
+        
+    p.gold -= target_item.value
+    import copy
+    new_item = copy.deepcopy(target_item)
+    p.add_item(new_item)
+    
+    state.combat_log = [f"Bought {new_item.name} for {new_item.value} gold."] + state.combat_log
+    return {"message": f"Purchased {new_item.name}", "state": get_state()}
+
+@app.post("/api/shop/sell")
+def sell_item(req: SellRequest):
+    p = state.player
+    found_idx = -1
+    for idx, item in enumerate(p.inventory):
+        if item.name.lower() == req.item_name.lower():
+            found_idx = idx
+            break
+            
+    if found_idx == -1:
+        raise HTTPException(status_code=404, detail="Item not found in inventory")
+        
+    item = p.inventory[found_idx]
+    sell_value = max(1, int(item.value * 0.5))
+    
+    p.gold += sell_value
+    p.inventory.pop(found_idx)
+    
+    if p.equipped_weapon and p.equipped_weapon.name.lower() == item.name.lower():
+        p.equipped_weapon = None
+    elif p.equipped_armor and p.equipped_armor.name.lower() == item.name.lower():
+        p.equipped_armor = None
+        
+    state.combat_log = [f"Sold {item.name} for {sell_value} gold."] + state.combat_log
+    return {"message": f"Sold {item.name} for {sell_value} gold", "state": get_state()}
 
 
 if __name__ == "__main__":

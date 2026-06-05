@@ -65,6 +65,8 @@ function App() {
   const [error, setError] = useState<string | null>(null)
   const [logs, setLogs] = useState<string[]>(["Connecting to Soul Society backend..."])
   const [dialogueQueue, setDialogueQueue] = useState<DialogueLine[] | null>(null)
+  const [shopOpen, setShopOpen] = useState(false)
+  const [shopItems, setShopItems] = useState<ItemInfo[]>([])
 
   const triggerLocationDialogue = (dest: string, enemyName?: string) => {
     const desc = mapData[dest]?.description || `You have traveled to ${dest}.`;
@@ -244,6 +246,102 @@ function App() {
         if (err instanceof Error) {
           addLog(`Reset failed: ${err.message}`)
         }
+      }
+    }
+  }
+
+  const openShop = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/shop/items`)
+      if (res.ok) {
+        const data = await res.json() as ItemInfo[]
+        setShopItems(data)
+        setShopOpen(true)
+        setDialogueQueue([
+          {
+            speaker: "Kisuke Urahara",
+            avatar: "urahara",
+            text: "Oh my, welcome to Urahara Shop! Look around, look around! I have some special spiritual goods that might catch your eye."
+          }
+        ])
+      }
+    } catch (err) {
+      console.error("Error opening shop:", err)
+    }
+  }
+
+  const closeShop = () => {
+    setShopOpen(false)
+    setDialogueQueue([
+      {
+        speaker: "Kisuke Urahara",
+        avatar: "urahara",
+        text: "Thank you for your patronage! Do drop by again if you manage to stay alive."
+      }
+    ])
+  }
+
+  const buyItem = async (itemName: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/shop/buy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_name: itemName })
+      })
+      if (!res.ok) {
+        const errData = await res.json() as { detail?: string }
+        throw new Error(errData.detail || "Purchase failed")
+      }
+      const data = await res.json() as { state?: GameStateData; message?: string }
+      if (data.state) {
+        setGameState(data.state)
+      }
+      setDialogueQueue([
+        {
+          speaker: "Kisuke Urahara",
+          avatar: "urahara",
+          text: `A fine choice! That ${itemName} will serve you well in battle.`
+        }
+      ])
+    } catch (err) {
+      if (err instanceof Error) {
+        setDialogueQueue([
+          {
+            speaker: "Kisuke Urahara",
+            avatar: "urahara",
+            text: "Oh dear... it seems you don't have enough gold for that!"
+          }
+        ])
+        addLog(`Purchase failed: ${err.message}`)
+      }
+    }
+  }
+
+  const sellItem = async (itemName: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/shop/sell`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_name: itemName })
+      })
+      if (!res.ok) {
+        const errData = await res.json() as { detail?: string }
+        throw new Error(errData.detail || "Sell failed")
+      }
+      const data = await res.json() as { state?: GameStateData; message?: string }
+      if (data.state) {
+        setGameState(data.state)
+      }
+      setDialogueQueue([
+        {
+          speaker: "Kisuke Urahara",
+          avatar: "urahara",
+          text: `Thank you! I'll put this ${itemName} to good use in my research.`
+        }
+      ])
+    } catch (err) {
+      if (err instanceof Error) {
+        addLog(`Sell failed: ${err.message}`)
       }
     }
   }
@@ -769,6 +867,14 @@ function App() {
                   }`}>Sector Overview</span>
                   <h3 className="text-sm font-black text-white">{currentLocDetails.name}</h3>
                   <p className="text-xs text-gray-400 mt-1 leading-relaxed">{currentLocDetails.description}</p>
+                  {!inCombat && (currentLocDetails.name === "Rukongai District" || currentLocDetails.name === "Shibuya Station") && (
+                    <button 
+                      className="mt-3.5 w-full bg-gradient-to-r from-emerald-600 to-green-700 hover:from-emerald-500 hover:to-green-600 text-white font-bold py-2 px-3 rounded-lg text-xs uppercase tracking-wider hover:-translate-y-0.5 hover:shadow-[0_4px_12px_rgba(34,197,94,0.3)] transition-all duration-200 cursor-pointer border-0"
+                      onClick={openShop}
+                    >
+                      🏪 Visit Urahara Shop
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -880,6 +986,118 @@ function App() {
           </section>
         </div>
       </div>
+      {shopOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+          <div className="bg-[#0b130e]/95 border-2 border-emerald-500/30 rounded-2xl w-full max-w-[850px] max-h-[85vh] overflow-hidden flex flex-col shadow-[0_0_30px_rgba(16,185,129,0.15)] animate-slide-up">
+            {/* Header */}
+            <div className="border-b border-emerald-500/10 p-5 flex items-center justify-between bg-emerald-950/20">
+              <div className="flex items-center gap-3">
+                <div className="w-[50px] h-[50px] bg-black/40 rounded-lg p-0.5 border border-emerald-500/20">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <circle cx="50" cy="50" r="48" fill="#14532d" stroke="#4ade80" strokeWidth="2" />
+                    <path d="M25 45 Q50 20 75 45 Z" fill="#166534" />
+                    <path d="M30 45 Q50 23 70 45 Z" fill="#ffffff" />
+                    <ellipse cx="50" cy="48" rx="32" ry="6" fill="#166534" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <h2 className="text-lg font-black text-green-400 [text-shadow:0_0_10px_rgba(74,222,128,0.4)] tracking-wide m-0">URAHARA SHOP</h2>
+                  <p className="text-[10px] text-gray-400 m-0">"Spiritual weapons, armor, and custom remedies."</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] uppercase text-gray-500 font-bold block">Your Funds</span>
+                <div className="flex items-center gap-1.5 justify-end">
+                  <span className="text-yellow-400 font-black text-lg">🪙 {player.gold}</span>
+                  <span className="text-[10px] text-yellow-500 uppercase font-black tracking-wider">Gold</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Catalog Body */}
+            <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0">
+              {/* Left Column: BUY */}
+              <div className="flex flex-col">
+                <h3 className="text-xs uppercase text-green-400 font-black tracking-wider border-b border-emerald-500/10 pb-2 mb-3 text-left">Items For Sale</h3>
+                <div className="flex flex-col gap-3 overflow-y-auto pr-1">
+                  {shopItems.map((item, idx) => (
+                    <div key={idx} className="bg-emerald-950/5 border border-emerald-500/10 rounded-xl p-3.5 flex justify-between items-center transition-all duration-200 hover:bg-emerald-950/10 hover:border-emerald-500/30">
+                      <div className="text-left flex-1 pr-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white">{item.name}</span>
+                          <span className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-bold ${
+                            item.item_type === 'weapon' ? 'bg-red-950/40 text-red-400 border border-red-500/20' :
+                            item.item_type === 'armor' ? 'bg-blue-950/40 text-blue-400 border border-blue-500/20' :
+                            'bg-green-950/40 text-green-400 border border-green-500/20'
+                          }`}>
+                            {item.item_type === 'weapon' ? `+${item.attack_bonus} ATK` :
+                             item.item_type === 'armor' ? `+${item.defense_bonus} DEF` :
+                             `HP Restore`}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-1 mb-0 leading-relaxed">{item.description}</p>
+                      </div>
+                      <button
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-all duration-150 flex items-center gap-1.5 cursor-pointer border-0"
+                        onClick={() => buyItem(item.name)}
+                      >
+                        <span>Buy</span>
+                        <span className="text-[10px] text-yellow-300">🪙{item.value}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column: SELL */}
+              <div className="flex flex-col">
+                <h3 className="text-xs uppercase text-yellow-500 font-black tracking-wider border-b border-yellow-500/10 pb-2 mb-3 text-left">Your Inventory</h3>
+                <div className="flex flex-col gap-3 overflow-y-auto pr-1">
+                  {player.inventory.length > 0 ? (
+                    player.inventory.map((item, idx) => {
+                      const sellValue = Math.max(1, Math.floor(item.value * 0.5));
+                      return (
+                        <div key={idx} className="bg-white/5 border border-white/10 rounded-xl p-3.5 flex justify-between items-center transition-all duration-200 hover:bg-white/10 hover:border-yellow-500/20">
+                          <div className="text-left flex-1 pr-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-bold text-white">{item.name}</span>
+                              <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-white/10 text-gray-400 border border-white/20 font-bold">
+                                {item.item_type}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-gray-400 mt-1 mb-0 leading-relaxed">{item.description}</p>
+                          </div>
+                          <button
+                            className="bg-yellow-600/20 hover:bg-yellow-600 border border-yellow-500/30 hover:border-yellow-500 text-yellow-400 hover:text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-all duration-150 flex items-center gap-1.5 cursor-pointer"
+                            onClick={() => sellItem(item.name)}
+                          >
+                            <span>Sell</span>
+                            <span className="text-[10px]">🪙{sellValue}</span>
+                          </button>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="flex-1 flex items-center justify-center border border-dashed border-white/5 rounded-xl p-8 text-center text-gray-500 italic text-xs">
+                      Inventory is empty. Nothing to sell.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-emerald-500/10 p-4 flex justify-end bg-black/40">
+              <button
+                className="bg-white/5 text-gray-300 hover:text-white border border-white/10 hover:border-emerald-500/50 rounded-lg py-2 px-5 text-xs font-bold cursor-pointer transition-all duration-150"
+                onClick={closeShop}
+              >
+                Exit Urahara Shop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {dialogueQueue && (
         <DialogueBox 
           lines={dialogueQueue} 

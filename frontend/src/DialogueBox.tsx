@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 
 export interface DialogueLine {
   speaker: string;
-  avatar: 'aizen' | 'gojo' | 'shunsui' | 'narrator';
+  avatar: 'aizen' | 'gojo' | 'shunsui' | 'urahara' | 'narrator';
   text: string;
   speed?: number; // ms per character
 }
@@ -57,6 +57,15 @@ const playTick = (type: 'aizen' | 'gojo' | 'shunsui' | 'narrator') => {
       gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.06);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.06);
+    } else if (type === 'urahara') {
+      // Playful, mid-pitch clog wooden-shoe block click
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(180, audioCtx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.018, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.05);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.05);
     } else {
       // Standard narrative typewriter tick
       osc.type = 'triangle';
@@ -141,6 +150,33 @@ const AvatarSVG = ({ type }: { type: 'aizen' | 'gojo' | 'shunsui' | 'narrator' }
         {/* Pink Flower details */}
         <circle cx="28" cy="72" r="3" fill="#f43f5e" />
         <circle cx="72" cy="72" r="3" fill="#f43f5e" />
+      </svg>
+    );
+  }
+
+  if (type === 'urahara') {
+    return (
+      <svg viewBox="0 0 100 100" className="w-full h-full">
+        <defs>
+          <radialGradient id="uraharaGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#22c55e" />
+            <stop offset="75%" stopColor="#14532d" />
+            <stop offset="100%" stopColor="#022c22" />
+          </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="48" fill="url(#uraharaGrad)" stroke="#4ade80" strokeWidth="2" />
+        {/* Green/White striped bucket hat */}
+        <path d="M25 45 Q50 20 75 45 Z" fill="#14532d" stroke="#166534" strokeWidth="1" />
+        <path d="M30 45 Q50 23 70 45 Z" fill="#ffffff" />
+        <path d="M38 45 Q50 26 62 45 Z" fill="#14532d" />
+        <path d="M45 45 Q50 30 55 45 Z" fill="#ffffff" />
+        {/* Hat brim */}
+        <ellipse cx="50" cy="48" rx="32" ry="6" fill="#166534" stroke="#14532d" strokeWidth="1" />
+        {/* Shadowed eyes & Urahara smile */}
+        <path d="M38 58 Q50 72 62 58" stroke="#fef08a" strokeWidth="2" fill="none" opacity="0.8" />
+        <path d="M42 66 Q50 72 58 66" stroke="#4ade80" strokeWidth="2" fill="none" />
+        {/* Fan silhouette peeking */}
+        <path d="M60 62 Q75 60 78 72 Q65 74 60 62 Z" fill="#fef08a" stroke="#ca8a04" strokeWidth="1" opacity="0.9" />
       </svg>
     );
   }
@@ -248,6 +284,7 @@ export const DialogueBox: React.FC<DialogueBoxProps> = ({ lines, onComplete }) =
       case 'aizen': return 'text-pink-400 [text-shadow:0_0_8px_rgba(244,114,182,0.6)]';
       case 'gojo': return 'text-cyan-400 [text-shadow:0_0_8px_rgba(34,211,238,0.6)]';
       case 'shunsui': return 'text-rose-400 [text-shadow:0_0_8px_rgba(251,113,133,0.6)]';
+      case 'urahara': return 'text-green-400 [text-shadow:0_0_8px_rgba(74,222,128,0.6)]';
       default: return 'text-teal-400 [text-shadow:0_0_8px_rgba(20,184,166,0.6)]';
     }
   };
@@ -258,6 +295,7 @@ export const DialogueBox: React.FC<DialogueBoxProps> = ({ lines, onComplete }) =
       case 'aizen': return 'border-pink-500/50 shadow-[0_0_20px_rgba(236,72,153,0.15)]';
       case 'gojo': return 'border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.15)]';
       case 'shunsui': return 'border-rose-500/50 shadow-[0_0_20px_rgba(244,63,94,0.15)]';
+      case 'urahara': return 'border-green-500/50 shadow-[0_0_20px_rgba(34,197,94,0.15)]';
       default: return 'border-teal-500/50 shadow-[0_0_20px_rgba(20,184,166,0.15)]';
     }
   };
