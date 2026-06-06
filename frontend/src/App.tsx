@@ -58,6 +58,61 @@ interface MapLocation {
   connections: string[];
 }
 
+const EnemyAvatar = ({ name }: { name: string }) => {
+  const lowercaseName = name.toLowerCase();
+  
+  if (lowercaseName.includes("hollow") || lowercaseName.includes("menos") || lowercaseName.includes("adjuchas")) {
+    return (
+      <svg viewBox="0 0 100 100" className="w-10 h-10">
+        <ellipse cx="50" cy="45" rx="20" ry="24" fill="#f8fafc" stroke="#374151" strokeWidth="2" />
+        <polygon points="38,42 46,45 38,48" fill="#ef4444" />
+        <polygon points="62,42 54,45 62,48" fill="#ef4444" />
+        <path d="M42 55 L42 62 M50 54 L50 63 M58 55 L58 62" stroke="#1f2937" strokeWidth="2" />
+        <circle cx="50" cy="78" r="7" fill="#000000" stroke="#f8fafc" strokeWidth="1" />
+      </svg>
+    );
+  }
+
+  if (lowercaseName.includes("curse") || lowercaseName.includes("fly head") || lowercaseName.includes("finger")) {
+    return (
+      <svg viewBox="0 0 100 100" className="w-10 h-10">
+        <defs>
+          <radialGradient id="curseEye" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#f43f5e" />
+            <stop offset="60%" stopColor="#9f1239" />
+            <stop offset="100%" stopColor="#000000" />
+          </radialGradient>
+        </defs>
+        <path d="M25 50 C25 20 75 20 75 50 C75 80 25 80 25 50 Z" fill="#1e1b4b" opacity="0.9" />
+        <circle cx="50" cy="50" r="14" fill="url(#curseEye)" className="animate-pulse" />
+        <circle cx="50" cy="50" r="4" fill="#ffffff" />
+        <path d="M35 65 L40 58 L45 65 L50 58 L55 65 L60 58 L65 65" stroke="#9f1239" strokeWidth="1.5" fill="none" />
+      </svg>
+    );
+  }
+
+  if (lowercaseName.includes("sukuna") || lowercaseName.includes("aizen") || lowercaseName.includes("replica")) {
+    return (
+      <svg viewBox="0 0 100 100" className="w-10 h-10">
+        <polygon points="50,12 85,85 15,85" fill="#581c87" opacity="0.4" stroke="#a855f7" strokeWidth="1" />
+        <path d="M35 50 Q42 45 46 50" stroke="#ef4444" strokeWidth="3.5" fill="none" />
+        <path d="M65 50 Q58 45 54 50" stroke="#ef4444" strokeWidth="3.5" fill="none" />
+        <path d="M42 55 L42 62 M58 55 L58 62" stroke="#000000" strokeWidth="2.5" />
+        <circle cx="50" cy="65" r="3" fill="#ffffff" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 100 100" className="w-10 h-10">
+      <path d="M20 35 L35 48 L65 48 L80 35 L70 65 L30 65 Z" fill="#3f3f46" stroke="#a1a1aa" strokeWidth="1.5" />
+      <circle cx="40" cy="54" r="3" fill="#ef4444" />
+      <circle cx="60" cy="54" r="3" fill="#ef4444" />
+      <path d="M15 75 L30 85 M25 75 L40 85" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+};
+
 function App() {
   const [gameState, setGameState] = useState<GameStateData | null>(null)
   const [mapData, setMapData] = useState<Record<string, MapLocation>>({})
@@ -694,154 +749,209 @@ function App() {
                   : 'bg-bg-panel/45 border-neon-cyan/20 hover:border-neon-cyan/40 hover:shadow-[0_8px_32px_rgba(102,252,241,0.05)]'
           }`}>
             <div>
-              <h2 className="text-xl font-bold text-white border-l-4 border-neon-cyan pl-3 mb-4 uppercase tracking-wider">
-                Tactical Hologram Map
+              <h2 className={`text-xl font-bold border-l-4 pl-3 mb-4 uppercase tracking-wider transition-all duration-300 ${
+                inCombat 
+                  ? 'text-red-500 border-red-500 [text-shadow:0_0_8px_rgba(239,68,68,0.4)]'
+                  : 'text-white border-neon-cyan'
+              }`}>
+                {inCombat ? 'Spiritual Combat Arena' : 'Tactical Hologram Map'}
               </h2>
 
-              {/* Interactive SVG/CSS Map Layout */}
-              <div className={`relative w-full h-[220px] bg-black/45 border rounded-lg overflow-hidden mb-4 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)] transition-colors ${
-                inCombat 
-                  ? 'border-red-500/35' 
-                  : isShibuya 
+              {inCombat && activeEnemy ? (
+                <div className="relative w-full h-[220px] bg-[#0c0505] border border-red-500/30 rounded-lg overflow-hidden mb-4 shadow-[0_0_20px_rgba(239,68,68,0.15)] flex flex-col justify-between p-4">
+                  {/* Grid / Sparks Background */}
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.02)_1px,transparent_1px)] bg-[size:15px_15px] pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-red-950/20 via-transparent to-transparent pointer-events-none"></div>
+                  
+                  {/* Top Battle Metadata */}
+                  <div className="relative z-10 flex justify-between items-center text-left">
+                    <span className="text-[9px] uppercase font-black tracking-widest text-red-500 [text-shadow:0_0_8px_rgba(239,68,68,0.6)] animate-pulse">
+                      ⚡ ACTIVE COMBAT Arena
+                    </span>
+                    <div className="flex gap-2">
+                      <span className="text-[9px] font-bold text-gray-500 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">
+                        XP +{activeEnemy.xp_reward}
+                      </span>
+                      <span className="text-[9px] font-bold text-gray-500 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">
+                        🪙 +{activeEnemy.gold_reward}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* VS Layout */}
+                  <div className="relative z-10 flex items-center justify-between flex-1 py-2">
+                    {/* Player Slot (Left) */}
+                    <div className="flex flex-col items-center w-[38%]">
+                      <div className="w-14 h-14 bg-gradient-to-br from-indigo-950 to-indigo-900 rounded-full p-0.5 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.2)]">
+                        <svg viewBox="0 0 100 100" className="w-10 h-10">
+                          <circle cx="50" cy="50" r="48" fill="none" stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
+                          <path d="M30 75 Q50 35 70 75 Z" fill="#6366f1" opacity="0.8" />
+                          <circle cx="50" cy="35" r="12" fill="#818cf8" />
+                        </svg>
+                      </div>
+                      <span className="text-[11px] font-bold text-white mt-1.5 truncate max-w-full">{player.name}</span>
+                      <span className="text-[8px] uppercase tracking-wider text-indigo-400">LVL {player.level}</span>
+                    </div>
+
+                    {/* VS Emblem (Center) */}
+                    <div className="flex flex-col items-center justify-center w-[20%] select-none">
+                      <span className="text-2xl font-black text-red-500 italic [text-shadow:0_0_12px_rgba(239,68,68,0.8)] animate-bounce">
+                        VS
+                      </span>
+                      <div className="w-0.5 h-8 bg-gradient-to-b from-transparent via-red-500/50 to-transparent"></div>
+                    </div>
+
+                    {/* Enemy Slot (Right) */}
+                    <div className="flex flex-col items-center w-[38%]">
+                      <div className="w-14 h-14 bg-gradient-to-br from-red-950 to-red-900 rounded-full p-0.5 border border-red-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(239,68,68,0.3)]">
+                        <EnemyAvatar name={activeEnemy.name} />
+                      </div>
+                      <span className="text-[11px] font-bold text-white mt-1.5 truncate max-w-full">{activeEnemy.name}</span>
+                      <span className="text-[8px] uppercase tracking-wider text-red-400">HOSTILE</span>
+                    </div>
+                  </div>
+
+                  {/* Bottom Health Bars */}
+                  <div className="relative z-10 flex gap-4 mt-2">
+                    {/* Player Health Bar (Left) */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-baseline mb-0.5 text-left">
+                        <span className="text-[9px] uppercase font-bold text-indigo-300">Player HP</span>
+                        <span className="font-mono text-[9px] text-white">{player.hp}/{player.max_hp}</span>
+                      </div>
+                      <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5">
+                        <div 
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-750 to-indigo-500 shadow-[0_0_6px_rgba(99,102,241,0.5)] transition-all duration-300"
+                          style={{ width: `${(player.hp / player.max_hp) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Enemy Health Bar (Right) */}
+                    <div className="flex-1">
+                      <div className="flex justify-between items-baseline mb-0.5 text-left">
+                        <span className="text-[9px] uppercase font-bold text-red-400">Enemy HP</span>
+                        <span className="font-mono text-[9px] text-white">{activeEnemy.hp}/{activeEnemy.max_hp}</span>
+                      </div>
+                      <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5">
+                        <div 
+                          className="h-full rounded-full bg-gradient-to-r from-red-750 to-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)] transition-all duration-300"
+                          style={{ width: `${enemyHpPct}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className={`relative w-full h-[220px] bg-black/45 border rounded-lg overflow-hidden mb-4 shadow-[inset_0_2px_10px_rgba(0,0,0,0.9)] transition-colors ${
+                  isShibuya 
                     ? 'border-neon-magenta/15' 
                     : isSeireitei
                       ? 'border-pink-500/15'
                       : isHuecoMundo
                         ? 'border-amber-500/15'
                         : 'border-white/10'
-              }`}>
-                {/* Grid backdrop */}
-                <div className={`absolute inset-0 bg-[linear-gradient(rgba(102,252,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none transition-all duration-500 ${
-                  isShibuya || isSeireitei || isHuecoMundo ? 'opacity-30' : 'opacity-100'
-                }`}></div>
+                }`}>
+                  {/* Grid backdrop */}
+                  <div className={`absolute inset-0 bg-[linear-gradient(rgba(102,252,241,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(102,252,241,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none transition-all duration-500 ${
+                    isShibuya || isSeireitei || isHuecoMundo ? 'opacity-30' : 'opacity-100'
+                  }`}></div>
 
-                {isShibuya && (
-                  <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,127,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,0,127,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
-                )}
+                  {isShibuya && (
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(255,0,127,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,0,127,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+                  )}
 
-                {isSeireitei && (
-                  <div className="absolute inset-0 bg-[linear-gradient(rgba(236,72,153,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(236,72,153,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
-                )}
+                  {isSeireitei && (
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(236,72,153,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(236,72,153,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+                  )}
 
-                {isHuecoMundo && (
-                  <div className="absolute inset-0 bg-[linear-gradient(rgba(245,158,11,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
-                )}
+                  {isHuecoMundo && (
+                    <div className="absolute inset-0 bg-[linear-gradient(rgba(245,158,11,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(245,158,11,0.015)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none"></div>
+                  )}
 
-                {/* Red warning grid overlay when in combat */}
-                {inCombat && (
-                  <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.02)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none animate-pulse"></div>
-                )}
-
-                {/* Connections SVG lines */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-                  {Object.entries(mapData).map(([name, loc]) =>
-                    loc.connections.map(conn => {
-                      const target = mapData[conn];
-                      if (!target) return null;
-                      return (
-                        <line
-                          key={`${name}-${conn}`}
-                          x1={`${loc.x}%`}
-                          y1={`${loc.y}%`}
-                          x2={`${target.x}%`}
-                          y2={`${target.y}%`}
-                          stroke={
-                            inCombat 
-                              ? "rgba(239, 68, 68, 0.15)" 
-                              : isShibuya 
+                  {/* Connections SVG lines */}
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
+                    {Object.entries(mapData).map(([name, loc]) =>
+                      loc.connections.map(conn => {
+                        const target = mapData[conn];
+                        if (!target) return null;
+                        return (
+                          <line
+                            key={`${name}-${conn}`}
+                            x1={`${loc.x}%`}
+                            y1={`${loc.y}%`}
+                            x2={`${target.x}%`}
+                            y2={`${target.y}%`}
+                            stroke={
+                              isShibuya 
                                 ? "rgba(255, 0, 127, 0.15)" 
                                 : isSeireitei
                                   ? "rgba(236, 72, 153, 0.15)"
                                   : isHuecoMundo
                                     ? "rgba(245, 158, 11, 0.15)"
                                     : "rgba(102, 252, 241, 0.2)"
-                          }
-                          strokeWidth="2"
-                          strokeDasharray="4 4"
-                        />
-                      );
-                    })
-                  )}
-                </svg>
+                            }
+                            strokeWidth="2"
+                            strokeDasharray="4 4"
+                          />
+                        );
+                      })
+                    )}
+                  </svg>
 
-                {/* Location Interactive Nodes */}
-                {Object.entries(mapData).map(([name, loc]) => {
-                  const isCurrent = player.current_location === name;
-                  const isConnected = currentLocDetails?.connections.includes(name);
-                  
-                  return (
-                    <div
-                      key={name}
-                      className={`absolute z-10 transform -translate-x-1/2 -translate-y-1/2 group ${
-                        inCombat ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                      }`}
-                      style={{ left: `${loc.x}%`, top: `${loc.y}%` }}
-                      onClick={() => !inCombat && (isConnected || isCurrent) && movePlayer(name)}
-                    >
-                      {/* Glowing effect for current position */}
-                      {isCurrent ? (
-                        <div className={`w-7 h-7 rounded-full border-2 animate-ping absolute -inset-1 ${
-                          inCombat 
-                            ? 'bg-red-500/20 border-red-500' 
-                            : isShibuya 
+                  {/* Location Interactive Nodes */}
+                  {Object.entries(mapData).map(([name, loc]) => {
+                    const isCurrent = player.current_location === name;
+                    const isConnected = currentLocDetails?.connections.includes(name);
+                    
+                    return (
+                      <div
+                        key={name}
+                        className="absolute z-10 transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
+                        style={{ left: `${loc.x}%`, top: `${loc.y}%` }}
+                        onClick={() => (isConnected || isCurrent) && movePlayer(name)}
+                      >
+                        {/* Glowing effect for current position */}
+                        {isCurrent ? (
+                          <div className={`w-7 h-7 rounded-full border-2 animate-ping absolute -inset-1 ${
+                            isShibuya 
                               ? 'bg-neon-magenta/20 border-neon-magenta' 
                               : isSeireitei
                                 ? 'bg-pink-500/20 border-pink-500'
                                 : isHuecoMundo
                                   ? 'bg-yellow-500/20 border-yellow-500'
                                   : 'bg-neon-cyan/20 border-neon-cyan'
-                        }`}></div>
-                      ) : null}
+                          }`}></div>
+                        ) : null}
 
-                      {/* Node Dot */}
-                      <div className={`w-4 h-4 rounded-full border-2 transition-all ${
-                        isCurrent 
-                          ? inCombat 
-                            ? 'bg-red-500 border-white scale-110 shadow-[0_0_10px_#ef4444]'
-                            : isShibuya
+                        {/* Node Dot */}
+                        <div className={`w-4 h-4 rounded-full border-2 transition-all ${
+                          isCurrent 
+                            ? isShibuya
                               ? 'bg-neon-magenta border-white scale-110 shadow-[0_0_10px_#ff007f]'
                               : isSeireitei
                                 ? 'bg-pink-400 border-white scale-110 shadow-[0_0_10px_#f472b6]'
                                 : isHuecoMundo
                                   ? 'bg-yellow-400 border-white scale-110 shadow-[0_0_10px_#facc15]'
                                   : 'bg-neon-cyan border-white scale-110 shadow-[0_0_10px_#66fcf1]' 
-                          : isConnected 
-                            ? isShibuya 
-                              ? 'bg-transparent border-neon-magenta hover:bg-neon-magenta/30 hover:scale-110' 
-                              : isSeireitei
-                                ? 'bg-transparent border-pink-400 hover:bg-pink-400/30 hover:scale-110'
-                                : isHuecoMundo
-                                  ? 'bg-transparent border-yellow-400 hover:bg-yellow-400/30 hover:scale-110'
-                                  : 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
-                            : 'bg-transparent border-gray-700'
-                      }`}></div>
+                            : isConnected 
+                              ? isShibuya 
+                                ? 'bg-transparent border-neon-magenta hover:bg-neon-magenta/30 hover:scale-110' 
+                                : isSeireitei
+                                  ? 'bg-transparent border-pink-400 hover:bg-pink-400/30 hover:scale-110'
+                                  : isHuecoMundo
+                                    ? 'bg-transparent border-yellow-400 hover:bg-yellow-400/30 hover:scale-110'
+                                    : 'bg-transparent border-neon-cyan hover:bg-neon-cyan/30 hover:scale-110' 
+                              : 'bg-transparent border-gray-700'
+                        }`}></div>
 
-                      {/* Hover Label */}
-                      <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-black/85 border border-white/10 text-[9px] text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
-                        {name} {isCurrent && "(Current)"}
+                        {/* Hover Label */}
+                        <div className="absolute top-5 left-1/2 transform -translate-x-1/2 bg-black/85 border border-white/10 text-[9px] text-white px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
+                          {name} {isCurrent && "(Current)"}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Combat Encounter Panel */}
-              {inCombat && activeEnemy && (
-                <div className="bg-red-950/20 border border-red-500/30 rounded-lg p-4 mb-4 text-left shadow-lg animate-pulse">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-[10px] uppercase text-red-500 font-extrabold tracking-widest">⚠️ Combat Encounter</span>
-                    <span className="text-[10px] text-gray-500">Gold Reward: {activeEnemy.gold_reward} | XP: {activeEnemy.xp_reward}</span>
-                  </div>
-                  <div className="flex justify-between items-baseline mb-2">
-                    <h3 className="text-base font-black text-white">{activeEnemy.name}</h3>
-                    <span className="font-mono text-xs text-red-400">HP: {activeEnemy.hp} / {activeEnemy.max_hp}</span>
-                  </div>
-                  <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5">
-                    <div 
-                      className="h-full rounded-full bg-gradient-to-r from-red-900 to-red-500 shadow-[0_0_6px_rgba(239,68,68,0.5)] transition-all duration-355" 
-                      style={{ width: `${enemyHpPct}%` }}
-                    ></div>
-                  </div>
+                    );
+                  })}
                 </div>
               )}
 
