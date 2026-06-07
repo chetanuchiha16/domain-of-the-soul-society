@@ -382,6 +382,159 @@ def combat_run():
             
         state.combat_log = log + state.combat_log
         return {"message": "Escape failed", "state": get_state()}
+
+class KidoRequest(BaseModel):
+    spell_name: str
+
+class SummonRequest(BaseModel):
+    summon_name: str
+
+class CombatItemRequest(BaseModel):
+    item_name: str
+
+@app.post("/api/combat/kido")
+def combat_kido(req: KidoRequest):
+    if not state.current_enemies:
+        raise HTTPException(status_code=400, detail="No active combat.")
+    
+    enemy = state.current_enemies[0]
+    p = state.player
+    spell = req.spell_name.lower()
+    log = []
+    
+    if spell == "shakkaho":
+        cost = 15
+        if p.energy < cost:
+            raise HTTPException(status_code=400, detail="Insufficient Reiryoku (energy).")
+        p.energy -= cost
+        dmg = int(p.attack_power * 1.5)
+        enemy.hp -= dmg
+        log.append(f"{p.name} cast Hadō #31: Shakkahō! Red flames burst out dealing {dmg} damage!")
+    elif spell == "kaido":
+        cost = 20
+        if p.energy < cost:
+            raise HTTPException(status_code=400, detail="Insufficient Reiryoku (energy).")
+        p.energy -= cost
+        heal = p.level * 20 + 20
+        p.hp = min(p.max_hp, p.hp + heal)
+        log.append(f"{p.name} cast Kaidō! Soft green spiritual energy heals {heal} HP.")
+    else:
+        raise HTTPException(status_code=400, detail="Unknown spell.")
+
+    # Check if enemy is defeated
+    if enemy.hp <= 0:
+        log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
+        p.xp += enemy.xp_reward
+        p.gold += enemy.gold_reward
+        if p.xp >= p.level * 100:
+            p.xp -= p.level * 100
+            p.level += 1
+            p.max_hp += 20
+            p.hp = p.max_hp
+            log.append(f"LEVEL UP! Reached level {p.level}!")
+        state.current_enemies = []
+    else:
+        # Enemy counter attacks
+        e_dmg = enemy.attack_power
+        actual_dmg = p.take_damage(e_dmg)
+        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
+        if p.hp <= 0:
+            p.hp = 0
+            log.append("You have been defeated! Respawning at Shibuya Station.")
+            p.current_location = "Shibuya Station"
+            p.hp = p.max_hp // 2
+            state.current_enemies = []
+            
+    state.combat_log = log + state.combat_log
+    return {"message": "Kido cast successfully", "state": get_state()}
+
+@app.post("/api/combat/summon")
+def combat_summon(req: SummonRequest):
+    if not state.current_enemies:
+        raise HTTPException(status_code=400, detail="No active combat.")
+    
+    enemy = state.current_enemies[0]
+    p = state.player
+    summon = req.summon_name.lower()
+    
+    if summon not in [s.lower() for s in p.summons]:
+        raise HTTPException(status_code=400, detail="Summon seal not found in inventory.")
+        
+    cost = 40
+    if p.energy < cost:
+        raise HTTPException(status_code=400, detail="Insufficient Reiryoku (energy).")
+        
+    p.energy -= cost
+    log = []
+    
+    if summon == "gojo":
+        dmg = 100
+        enemy.hp -= dmg
+        log.append(f"{p.name} summoned Satoru Gojo! Domain Expansion: Infinite Void freezes the enemy, dealing {dmg} absolute damage!")
+    elif summon == "shunsui":
+        dmg = 70
+        enemy.hp -= dmg
+        log.append(f"{p.name} summoned Shunsui Kyoraku! Kageoni strikes from the shadows, dealing {dmg} shadow damage!")
+    else:
+        raise HTTPException(status_code=400, detail="Unknown summon.")
+        
+    # Check if enemy is defeated
+    if enemy.hp <= 0:
+        log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
+        p.xp += enemy.xp_reward
+        p.gold += enemy.gold_reward
+        if p.xp >= p.level * 100:
+            p.xp -= p.level * 100
+            p.level += 1
+            p.max_hp += 20
+            p.hp = p.max_hp
+            log.append(f"LEVEL UP! Reached level {p.level}!")
+        state.current_enemies = []
+    else:
+        # Enemy counter attacks
+        e_dmg = enemy.attack_power
+        actual_dmg = p.take_damage(e_dmg)
+        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
+        if p.hp <= 0:
+            p.hp = 0
+            log.append("You have been defeated! Respawning at Shibuya Station.")
+            p.current_location = "Shibuya Station"
+            p.hp = p.max_hp // 2
+            state.current_enemies = []
+            
+    state.combat_log = log + state.combat_log
+    return {"message": "Summon executed", "state": get_state()}
+
+@app.post("/api/combat/item")
+def combat_item(req: CombatItemRequest):
+    if not state.current_enemies:
+        raise HTTPException(status_code=400, detail="No active combat.")
+        
+    enemy = state.current_enemies[0]
+    p = state.player
+    log = []
+    
+    # Check if player has the item and it's consumable
+    success = p.use_item(req.item_name)
+    if not success:
+        raise HTTPException(status_code=400, detail="Consumable item not found in inventory.")
+        
+    log.append(f"{p.name} used {req.item_name} in combat.")
+    
+    # Enemy counter attacks because using an item took the player's turn
+    e_dmg = enemy.attack_power
+    actual_dmg = p.take_damage(e_dmg)
+    log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
+    if p.hp <= 0:
+        p.hp = 0
+        log.append("You have been defeated! Respawning at Shibuya Station.")
+        p.current_location = "Shibuya Station"
+        p.hp = p.max_hp // 2
+        state.current_enemies = []
+        
+    state.combat_log = log + state.combat_log
+    return {"message": f"Used {req.item_name}", "state": get_state()}
+
 # Urahara Shop Catalog
 shop_catalog = {
     "health_potion": Consumable("Health Potion", "Restores 50 HP", heal_hp=50, restore_energy=0, value=15),

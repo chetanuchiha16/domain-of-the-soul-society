@@ -122,6 +122,7 @@ function App() {
   const [dialogueQueue, setDialogueQueue] = useState<DialogueLine[] | null>(null)
   const [shopOpen, setShopOpen] = useState(false)
   const [shopItems, setShopItems] = useState<ItemInfo[]>([])
+  const [combatMenu, setCombatMenu] = useState<'main' | 'kido' | 'items' | 'summons'>('main')
 
   const triggerLocationDialogue = (dest: string, enemyName?: string) => {
     const desc = mapData[dest]?.description || `You have traveled to ${dest}.`;
@@ -416,6 +417,93 @@ function App() {
   const attackEnemy = () => handleAction('combat/attack')
   const runAway = () => handleAction('combat/run')
 
+  const castKido = async (spellName: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/combat/kido`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spell_name: spellName })
+      })
+      if (!res.ok) {
+        const errData = await res.json() as { detail?: string }
+        throw new Error(errData.detail || "Spell failed")
+      }
+      const data = await res.json() as { state?: GameStateData }
+      if (data.state) {
+        setGameState(data.state)
+        if (data.state.combat.log.length > 0) {
+          addLog(data.state.combat.log[0])
+          if (data.state.combat.log.length > 1) {
+            addLog(data.state.combat.log[1])
+          }
+        }
+      }
+      setCombatMenu('main')
+    } catch (err) {
+      if (err instanceof Error) {
+        addLog(`Kidō failed: ${err.message}`)
+      }
+    }
+  }
+
+  const executeSummon = async (summonName: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/combat/summon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ summon_name: summonName })
+      })
+      if (!res.ok) {
+        const errData = await res.json() as { detail?: string }
+        throw new Error(errData.detail || "Summon failed")
+      }
+      const data = await res.json() as { state?: GameStateData }
+      if (data.state) {
+        setGameState(data.state)
+        if (data.state.combat.log.length > 0) {
+          addLog(data.state.combat.log[0])
+          if (data.state.combat.log.length > 1) {
+            addLog(data.state.combat.log[1])
+          }
+        }
+      }
+      setCombatMenu('main')
+    } catch (err) {
+      if (err instanceof Error) {
+        addLog(`Summon failed: ${err.message}`)
+      }
+    }
+  }
+
+  const useCombatItem = async (itemName: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/combat/item`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_name: itemName })
+      })
+      if (!res.ok) {
+        const errData = await res.json() as { detail?: string }
+        throw new Error(errData.detail || "Item failed")
+      }
+      const data = await res.json() as { state?: GameStateData }
+      if (data.state) {
+        setGameState(data.state)
+        if (data.state.combat.log.length > 0) {
+          addLog(data.state.combat.log[0])
+          if (data.state.combat.log.length > 1) {
+            addLog(data.state.combat.log[1])
+          }
+        }
+      }
+      setCombatMenu('main')
+    } catch (err) {
+      if (err instanceof Error) {
+        addLog(`Item use failed: ${err.message}`)
+      }
+    }
+  }
+
   if (loading && !gameState) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh]">
@@ -457,6 +545,12 @@ function App() {
   const inCombat = combat.enemies && combat.enemies.length > 0
   const activeEnemy = inCombat ? combat.enemies[0] : null
   const enemyHpPct = activeEnemy ? (activeEnemy.hp / activeEnemy.max_hp) * 100 : 0
+
+  useEffect(() => {
+    if (!inCombat) {
+      setCombatMenu('main')
+    }
+  }, [inCombat])
 
   // Region theme detectors
   const currentRegion = currentLocDetails?.region || "Shibuya"
@@ -1039,19 +1133,161 @@ function App() {
 
               {/* Control Actions */}
               {inCombat ? (
-                <div className="flex gap-4 mb-4">
-                  <button 
-                    className="flex-1 bg-gradient-to-br from-red-600 to-red-800 text-white border-0 rounded-lg py-3.5 px-5 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(239,68,68,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(239,68,68,0.5)] transition-all duration-200" 
-                    onClick={attackEnemy}
-                  >
-                    ⚡ Attack Enemy
-                  </button>
-                  <button 
-                    className="bg-white/5 text-red-300 border border-red-500/20 rounded-lg py-2.5 px-5 cursor-pointer hover:bg-red-500/10 hover:text-white hover:border-red-500 transition-all duration-200" 
-                    onClick={runAway}
-                  >
-                    🏃 Escape
-                  </button>
+                <div className="mb-4">
+                  {combatMenu === 'main' && (
+                    <div className="flex flex-col gap-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <button 
+                          className="bg-gradient-to-br from-red-600 to-red-800 text-white border-0 rounded-lg py-3 px-4 font-bold text-xs uppercase tracking-wider cursor-pointer shadow-[0_4px_10px_rgba(239,68,68,0.2)] hover:-translate-y-0.5 hover:shadow-[0_6px_15px_rgba(239,68,68,0.4)] transition-all duration-150 flex flex-col items-center gap-1" 
+                          onClick={attackEnemy}
+                        >
+                          <span className="text-lg">⚔️</span>
+                          <span>Zanjutsu (Slash)</span>
+                        </button>
+                        <button 
+                          className="bg-gradient-to-br from-purple-700 to-purple-900 text-white border-0 rounded-lg py-3 px-4 font-bold text-xs uppercase tracking-wider cursor-pointer shadow-[0_4px_10px_rgba(147,51,234,0.2)] hover:-translate-y-0.5 hover:shadow-[0_6px_15px_rgba(147,51,234,0.4)] transition-all duration-150 flex flex-col items-center gap-1" 
+                          onClick={() => setCombatMenu('kido')}
+                        >
+                          <span className="text-lg">🔮</span>
+                          <span>Kidō Spells</span>
+                        </button>
+                        <button 
+                          className="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white border-0 rounded-lg py-3 px-4 font-bold text-xs uppercase tracking-wider cursor-pointer shadow-[0_4px_10px_rgba(16,185,129,0.2)] hover:-translate-y-0.5 hover:shadow-[0_6px_15px_rgba(16,185,129,0.4)] transition-all duration-150 flex flex-col items-center gap-1" 
+                          onClick={() => setCombatMenu('items')}
+                        >
+                          <span className="text-lg">📦</span>
+                          <span>Items (Potions)</span>
+                        </button>
+                        <button 
+                          className="bg-gradient-to-br from-amber-600 to-amber-800 text-white border-0 rounded-lg py-3 px-4 font-bold text-xs uppercase tracking-wider cursor-pointer shadow-[0_4px_10px_rgba(245,158,11,0.2)] hover:-translate-y-0.5 hover:shadow-[0_6px_15px_rgba(245,158,11,0.4)] transition-all duration-150 flex flex-col items-center gap-1" 
+                          onClick={() => setCombatMenu('summons')}
+                        >
+                          <span className="text-lg">🦊</span>
+                          <span>Summon Seals</span>
+                        </button>
+                      </div>
+                      <button 
+                        className="w-full bg-white/5 text-red-300 border border-red-500/20 rounded-lg py-2.5 px-4 text-xs font-bold uppercase tracking-wider cursor-pointer hover:bg-red-500/10 hover:text-white hover:border-red-500 transition-all duration-150" 
+                        onClick={runAway}
+                      >
+                        🏃 Escape Combat
+                      </button>
+                    </div>
+                  )}
+
+                  {combatMenu === 'kido' && (
+                    <div className="bg-purple-950/10 border border-purple-500/20 rounded-xl p-3.5 flex flex-col gap-3">
+                      <div className="flex justify-between items-center border-b border-purple-500/10 pb-2 mb-1">
+                        <span className="text-[10px] uppercase font-black text-purple-400 tracking-widest">🔮 Kidō Spellbook</span>
+                        <span className="text-[10px] text-gray-500">Reiryoku: {player.energy}</span>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          className="w-full bg-purple-900/40 hover:bg-purple-900 border border-purple-500/30 text-white font-bold py-2 px-3 rounded-lg text-xs transition-all duration-150 flex justify-between items-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          disabled={player.energy < 15}
+                          onClick={() => castKido('shakkaho')}
+                        >
+                          <span className="text-left flex flex-col">
+                            <span className="text-white">🔥 Hadō #31: Shakkahō</span>
+                            <span className="text-[9px] text-purple-300 font-normal">Burst of red flames (1.5x ATK dmg)</span>
+                          </span>
+                          <span className="bg-purple-950 px-2 py-0.5 rounded text-[10px] text-purple-300">15 Energy</span>
+                        </button>
+                        <button
+                          className="w-full bg-purple-900/40 hover:bg-purple-900 border border-purple-500/30 text-white font-bold py-2 px-3 rounded-lg text-xs transition-all duration-150 flex justify-between items-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                          disabled={player.energy < 20}
+                          onClick={() => castKido('kaido')}
+                        >
+                          <span className="text-left flex flex-col">
+                            <span className="text-white">💚 Kaidō (Restoration)</span>
+                            <span className="text-[9px] text-purple-300 font-normal">Heals substantial soul HP</span>
+                          </span>
+                          <span className="bg-purple-950 px-2 py-0.5 rounded text-[10px] text-purple-300">20 Energy</span>
+                        </button>
+                      </div>
+                      <button
+                        className="w-full bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                        onClick={() => setCombatMenu('main')}
+                      >
+                        ⬅️ Back to Tactics
+                      </button>
+                    </div>
+                  )}
+
+                  {combatMenu === 'items' && (
+                    <div className="bg-emerald-950/10 border border-emerald-500/20 rounded-xl p-3.5 flex flex-col gap-3">
+                      <div className="flex justify-between items-center border-b border-emerald-500/10 pb-2 mb-1">
+                        <span className="text-[10px] uppercase font-black text-emerald-400 tracking-widest">📦 Combat Satchel</span>
+                        <span className="text-[10px] text-gray-500">Usable Items</span>
+                      </div>
+                      <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto pr-1">
+                        {player.inventory.filter(i => i.item_type === 'consumable').length > 0 ? (
+                          player.inventory.filter(i => i.item_type === 'consumable').map((item, idx) => (
+                            <button
+                              key={idx}
+                              className="w-full bg-emerald-900/40 hover:bg-emerald-900 border border-emerald-500/30 text-white font-bold py-2 px-3 rounded-lg text-xs transition-all duration-150 flex justify-between items-center cursor-pointer"
+                              onClick={() => useCombatItem(item.name)}
+                            >
+                              <span className="text-left flex flex-col">
+                                <span className="text-white">🧪 {item.name}</span>
+                                <span className="text-[9px] text-emerald-300 font-normal">{item.description}</span>
+                              </span>
+                              <span className="bg-emerald-950 px-2 py-0.5 rounded text-[10px] text-emerald-300">Use</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="py-4 text-center text-gray-500 italic text-[11px]">
+                            No consumable items in inventory.
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        className="w-full bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                        onClick={() => setCombatMenu('main')}
+                      >
+                        ⬅️ Back to Tactics
+                      </button>
+                    </div>
+                  )}
+
+                  {combatMenu === 'summons' && (
+                    <div className="bg-amber-950/10 border border-amber-500/20 rounded-xl p-3.5 flex flex-col gap-3">
+                      <div className="flex justify-between items-center border-b border-amber-500/10 pb-2 mb-1">
+                        <span className="text-[10px] uppercase font-black text-amber-400 tracking-widest">🔮 Summoning Rituals</span>
+                        <span className="text-[10px] text-gray-500">Reiryoku: {player.energy}</span>
+                      </div>
+                      <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto pr-1">
+                        {player.summons.length > 0 ? (
+                          player.summons.map((summon, idx) => (
+                            <button
+                              key={idx}
+                              className="w-full bg-amber-900/40 hover:bg-amber-900 border border-amber-500/30 text-white font-bold py-2 px-3 rounded-lg text-xs transition-all duration-150 flex justify-between items-center cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                              disabled={player.energy < 40}
+                              onClick={() => executeSummon(summon)}
+                            >
+                              <span className="text-left flex flex-col">
+                                <span className="text-white capitalize">🔮 {summon} Summon</span>
+                                <span className="text-[9px] text-amber-300 font-normal">
+                                  {summon.toLowerCase() === 'gojo' ? 'Domain Expansion: 100 Absolute Dmg' : 'Kageoni shadow strike: 70 Shadow Dmg'}
+                                </span>
+                              </span>
+                              <span className="bg-amber-950 px-2 py-0.5 rounded text-[10px] text-amber-300">40 Energy</span>
+                            </button>
+                          ))
+                        ) : (
+                          <div className="py-4 text-center text-gray-500 italic text-[11px]">
+                            No summon seals in inventory. Find them in dungeons!
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        className="w-full bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white border border-white/10 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider cursor-pointer"
+                        onClick={() => setCombatMenu('main')}
+                      >
+                        ⬅️ Back to Tactics
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex gap-4 mb-4">
