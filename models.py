@@ -241,6 +241,21 @@ class Enemy(Entity):
         super().__init__(name, hp, attack_power)
         self.xp_reward = xp_reward
         self.gold_reward = gold_reward
+        self.next_intent = "ATTACK"
+        self.prepare_next_intent()
+
+    def prepare_next_intent(self):
+        # Weighted selection of next action:
+        # 60% attack, 20% heavy attack, 10% heal, 10% curse
+        r = random.random()
+        if r < 0.60:
+            self.next_intent = "ATTACK"
+        elif r < 0.80:
+            self.next_intent = "HEAVY_ATTACK"
+        elif r < 0.90:
+            self.next_intent = "HEAL"
+        else:
+            self.next_intent = "CURSE"
 
     def get_stats_summary(self):
         return f"{self.name} - HP: {self.hp}/{self.max_hp} | ATK: {self.attack_power}"

@@ -92,7 +92,8 @@ def get_state():
                     "max_hp": e.max_hp,
                     "attack_power": e.attack_power,
                     "xp_reward": e.xp_reward,
-                    "gold_reward": e.gold_reward
+                    "gold_reward": e.gold_reward,
+                    "next_intent": e.next_intent
                 } for e in state.current_enemies
             ],
             "log": state.combat_log
@@ -310,6 +311,41 @@ def move_player(req: MoveRequest):
         
     return {"message": log_msg, "state": get_state()}
 
+def enemy_turn(p, enemy, log):
+    intent = enemy.next_intent
+    
+    if intent == "ATTACK":
+        e_dmg = enemy.attack_power
+        actual_dmg = p.take_damage(e_dmg)
+        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
+    elif intent == "HEAVY_ATTACK":
+        e_dmg = int(enemy.attack_power * 1.8)
+        actual_dmg = p.take_damage(e_dmg)
+        log.append(f"💥 {enemy.name} unleashes a Heavy Strike! Deals {actual_dmg} critical damage (Armor absorbed {e_dmg - actual_dmg})!")
+    elif intent == "HEAL":
+        heal_amt = 35
+        enemy.hp += heal_amt
+        log.append(f"💚 {enemy.name} channels spiritual essence and heals for {heal_amt} HP!")
+    elif intent == "CURSE":
+        drain_amt = 15
+        p.energy -= drain_amt
+        e_dmg = int(enemy.attack_power * 0.5)
+        actual_dmg = p.take_damage(e_dmg)
+        log.append(f"⚡ {enemy.name} chants a Curse! Drains {drain_amt} of your Reiryoku and deals {actual_dmg} damage!")
+    else:
+        e_dmg = enemy.attack_power
+        actual_dmg = p.take_damage(e_dmg)
+        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage.")
+
+    if p.hp <= 0:
+        p.hp = 0
+        log.append("You have been defeated! Respawning at Shibuya Station.")
+        p.current_location = "Shibuya Station"
+        p.hp = p.max_hp // 2
+        state.current_enemies = []
+        
+    enemy.prepare_next_intent()
+
 @app.post("/api/combat/attack")
 def combat_attack():
     if not state.current_enemies:
@@ -336,16 +372,8 @@ def combat_attack():
             log.append(f"LEVEL UP! Reached level {p.level}!")
         state.current_enemies = []
     else:
-        # Enemy counter attacks
-        e_dmg = enemy.attack_power
-        actual_dmg = p.take_damage(e_dmg)
-        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
-        if p.hp <= 0:
-            p.hp = 0
-            log.append("You have been defeated! Respawning at Shibuya Station.")
-            p.current_location = "Shibuya Station"
-            p.hp = p.max_hp // 2
-            state.current_enemies = []
+        # Enemy counter attacks using dynamic behaviors
+        enemy_turn(p, enemy, log)
             
     state.combat_log = log + state.combat_log
     return {"message": "Attack executed", "state": get_state()}
@@ -366,20 +394,9 @@ def combat_run():
         state.combat_log = [msg] + state.combat_log
         return {"message": msg, "state": get_state()}
     else:
-        # Fail to escape: enemy attacks
-        e_dmg = enemy.attack_power
-        actual_dmg = p.take_damage(e_dmg)
-        log = [
-            f"Failed to escape from {enemy.name}!",
-            f"{enemy.name} attacks you for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg})."
-        ]
-        if p.hp <= 0:
-            p.hp = 0
-            log.append("You have been defeated! Respawning at Shibuya Station.")
-            p.current_location = "Shibuya Station"
-            p.hp = p.max_hp // 2
-            state.current_enemies = []
-            
+        # Fail to escape: enemy attacks using dynamic behaviors
+        log = [f"Failed to escape from {enemy.name}!"]
+        enemy_turn(p, enemy, log)
         state.combat_log = log + state.combat_log
         return {"message": "Escape failed", "state": get_state()}
 
@@ -434,16 +451,8 @@ def combat_kido(req: KidoRequest):
             log.append(f"LEVEL UP! Reached level {p.level}!")
         state.current_enemies = []
     else:
-        # Enemy counter attacks
-        e_dmg = enemy.attack_power
-        actual_dmg = p.take_damage(e_dmg)
-        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
-        if p.hp <= 0:
-            p.hp = 0
-            log.append("You have been defeated! Respawning at Shibuya Station.")
-            p.current_location = "Shibuya Station"
-            p.hp = p.max_hp // 2
-            state.current_enemies = []
+        # Enemy counter attacks using dynamic behaviors
+        enemy_turn(p, enemy, log)
             
     state.combat_log = log + state.combat_log
     return {"message": "Kido cast successfully", "state": get_state()}
@@ -491,16 +500,8 @@ def combat_summon(req: SummonRequest):
             log.append(f"LEVEL UP! Reached level {p.level}!")
         state.current_enemies = []
     else:
-        # Enemy counter attacks
-        e_dmg = enemy.attack_power
-        actual_dmg = p.take_damage(e_dmg)
-        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
-        if p.hp <= 0:
-            p.hp = 0
-            log.append("You have been defeated! Respawning at Shibuya Station.")
-            p.current_location = "Shibuya Station"
-            p.hp = p.max_hp // 2
-            state.current_enemies = []
+        # Enemy counter attacks using dynamic behaviors
+        enemy_turn(p, enemy, log)
             
     state.combat_log = log + state.combat_log
     return {"message": "Summon executed", "state": get_state()}
@@ -522,15 +523,7 @@ def combat_item(req: CombatItemRequest):
     log.append(f"{p.name} used {req.item_name} in combat.")
     
     # Enemy counter attacks because using an item took the player's turn
-    e_dmg = enemy.attack_power
-    actual_dmg = p.take_damage(e_dmg)
-    log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
-    if p.hp <= 0:
-        p.hp = 0
-        log.append("You have been defeated! Respawning at Shibuya Station.")
-        p.current_location = "Shibuya Station"
-        p.hp = p.max_hp // 2
-        state.current_enemies = []
+    enemy_turn(p, enemy, log)
         
     state.combat_log = log + state.combat_log
     return {"message": f"Used {req.item_name}", "state": get_state()}

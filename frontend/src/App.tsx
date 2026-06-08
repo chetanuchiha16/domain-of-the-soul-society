@@ -876,15 +876,40 @@ function App() {
                   <div className="relative z-10 flex items-center justify-between flex-1 py-2">
                     {/* Player Slot (Left) */}
                     <div className="flex flex-col items-center w-[38%]">
-                      <div className="w-14 h-14 bg-gradient-to-br from-indigo-950 to-indigo-900 rounded-full p-0.5 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.2)]">
+                      <div className="w-14 h-14 bg-gradient-to-br from-indigo-950 to-indigo-900 rounded-full p-0.5 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.2)] relative">
                         <svg viewBox="0 0 100 100" className="w-10 h-10">
                           <circle cx="50" cy="50" r="48" fill="none" stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
                           <path d="M30 75 Q50 35 70 75 Z" fill="#6366f1" opacity="0.8" />
                           <circle cx="50" cy="35" r="12" fill="#818cf8" />
                         </svg>
+                        
+                        {/* Targeted crosshair scope overlay */}
+                        {(activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' && (
+                          <>
+                            <div className="absolute inset-0 border-2 border-red-500 rounded-full animate-ping pointer-events-none opacity-60"></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <svg className="w-14 h-14 text-red-500 animate-spin bg-transparent pointer-events-none [animation-duration:8s]" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 8" />
+                                <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="1" />
+                                <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="1" />
+                              </svg>
+                            </div>
+                          </>
+                        )}
                       </div>
                       <span className="text-[11px] font-bold text-white mt-1.5 truncate max-w-full">{player.name}</span>
                       <span className="text-[8px] uppercase tracking-wider text-indigo-400">LVL {player.level}</span>
+                      
+                      {/* Targeting Alert Tag */}
+                      {(activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' ? (
+                        <span className="text-[7px] uppercase font-black tracking-widest text-red-500 bg-red-950/50 px-1 py-0.5 rounded border border-red-500/20 mt-1 animate-pulse">
+                          ⚠️ TARGETED
+                        </span>
+                      ) : (
+                        <span className="text-[7px] uppercase font-bold tracking-widest text-gray-500 mt-1">
+                          SAFE
+                        </span>
+                      )}
                     </div>
 
                     {/* VS Emblem (Center) */}
@@ -897,11 +922,34 @@ function App() {
 
                     {/* Enemy Slot (Right) */}
                     <div className="flex flex-col items-center w-[38%]">
-                      <div className="w-14 h-14 bg-gradient-to-br from-red-950 to-red-900 rounded-full p-0.5 border border-red-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(239,68,68,0.3)]">
+                      <div className="w-14 h-14 bg-gradient-to-br from-red-950 to-red-900 rounded-full p-0.5 border border-red-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(239,68,68,0.3)] relative">
                         <EnemyAvatar name={activeEnemy.name} />
+
+                        {/* If healing, show healing glow ring */}
+                        {(activeEnemy as any).next_intent === 'HEAL' && (
+                          <div className="absolute inset-0 border-2 border-emerald-500 rounded-full animate-pulse pointer-events-none opacity-60"></div>
+                        )}
                       </div>
                       <span className="text-[11px] font-bold text-white mt-1.5 truncate max-w-full">{activeEnemy.name}</span>
                       <span className="text-[8px] uppercase tracking-wider text-red-400">HOSTILE</span>
+
+                      {/* Intent Warning Badges */}
+                      {(activeEnemy as any).next_intent && (
+                        <div className={`mt-1 text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded border transition-all duration-300 ${
+                          (activeEnemy as any).next_intent === 'HEAVY_ATTACK'
+                            ? 'bg-red-950/40 border-red-500 text-red-400 animate-pulse shadow-[0_0_6px_rgba(239,68,68,0.3)]'
+                            : (activeEnemy as any).next_intent === 'HEAL'
+                              ? 'bg-emerald-950/40 border-emerald-500 text-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.3)]'
+                              : (activeEnemy as any).next_intent === 'CURSE'
+                                ? 'bg-purple-950/40 border-purple-500 text-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.3)]'
+                                : 'bg-white/5 border-white/10 text-gray-400'
+                        }`}>
+                          {(activeEnemy as any).next_intent === 'HEAVY_ATTACK' && '💥 HEAVY'}
+                          {(activeEnemy as any).next_intent === 'HEAL' && '💚 RESTORE'}
+                          {(activeEnemy as any).next_intent === 'CURSE' && '⚡ CURSE'}
+                          {(activeEnemy as any).next_intent === 'ATTACK' && '⚔️ SLASH'}
+                        </div>
+                      )}
                     </div>
                   </div>
 
