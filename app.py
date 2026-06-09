@@ -82,7 +82,8 @@ def get_state():
             "summons": p.summons,
             "equipped_weapon": weapon_info,
             "equipped_armor": armor_info,
-            "current_location": p.current_location
+            "current_location": p.current_location,
+            "status_effects": p.status_effects
         },
         "combat": {
             "enemies": [
@@ -93,7 +94,8 @@ def get_state():
                     "attack_power": e.attack_power,
                     "xp_reward": e.xp_reward,
                     "gold_reward": e.gold_reward,
-                    "next_intent": e.next_intent
+                    "next_intent": e.next_intent,
+                    "status_effects": e.status_effects
                 } for e in state.current_enemies
             ],
             "log": state.combat_log
@@ -311,31 +313,97 @@ def move_player(req: MoveRequest):
         
     return {"message": log_msg, "state": get_state()}
 
-def enemy_turn(p, enemy, log):
-    intent = enemy.next_intent
+def resolve_status_effects(entity, log):
+    """
+    Executes start-of-turn status effect updates (e.g. burn damage).
+    Returns True if the entity is frozen (stunned) and should skip their action.
+    """
+    frozen = False
+    new_effects = []
     
-    if intent == "ATTACK":
-        e_dmg = enemy.attack_power
-        actual_dmg = p.take_damage(e_dmg)
-        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
-    elif intent == "HEAVY_ATTACK":
-        e_dmg = int(enemy.attack_power * 1.8)
-        actual_dmg = p.take_damage(e_dmg)
-        log.append(f"💥 {enemy.name} unleashes a Heavy Strike! Deals {actual_dmg} critical damage (Armor absorbed {e_dmg - actual_dmg})!")
-    elif intent == "HEAL":
-        heal_amt = 35
-        enemy.hp += heal_amt
-        log.append(f"💚 {enemy.name} channels spiritual essence and heals for {heal_amt} HP!")
-    elif intent == "CURSE":
-        drain_amt = 15
-        p.energy -= drain_amt
-        e_dmg = int(enemy.attack_power * 0.5)
-        actual_dmg = p.take_damage(e_dmg)
-        log.append(f"⚡ {enemy.name} chants a Curse! Drains {drain_amt} of your Reiryoku and deals {actual_dmg} damage!")
+    for effect in entity.status_effects:
+        name = effect.get("name")
+        turns = effect.get("turns", 0)
+        value = effect.get("value", 0)
+        icon = effect.get("icon", "")
+        
+        # Apply start-of-turn effects
+        if name == "Burned":
+            entity.hp -= value
+            log.append(f"🔥 {entity.name} takes {value} burn damage from the flames ({turns} turns left)!")
+        elif name == "Frozen":
+            frozen = True
+            log.append(f"❄️ {entity.name} is Frozen solid and cannot act ({turns} turns left)!")
+            
+        turns -= 1
+        
+        if turns > 0:
+            if name == "Shielded" and value <= 0:
+                log.append(f"🛡️ {entity.name}'s Soul Shield broke!")
+            else:
+                effect["turns"] = turns
+                new_effects.append(effect)
+        else:
+            log.append(f"✨ {entity.name}'s {icon} {name} status has worn off.")
+            
+    entity.status_effects = new_effects
+    return frozen
+
+def enemy_turn(p, enemy, log):
+    # Resolve enemy status effects at start of turn
+    enemy_frozen = resolve_status_effects(enemy, log)
+    
+    if enemy.hp <= 0:
+        # Might die from Burned!
+        return
+        
+    if not enemy_frozen:
+        intent = enemy.next_intent
+        
+        # Check if enemy is Weakened
+        is_weakened = any(eff.get("name") == "Weakened" for eff in enemy.status_effects)
+        
+        if intent == "ATTACK":
+            e_dmg = enemy.attack_power
+            if is_weakened:
+                e_dmg = int(e_dmg * 0.7)
+                log.append(f"🩸 {enemy.name} is Weakened! Attack power reduced.")
+            actual_dmg = p.take_damage(e_dmg)
+            log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
+        elif intent == "HEAVY_ATTACK":
+            e_dmg = int(enemy.attack_power * 1.8)
+            if is_weakened:
+                e_dmg = int(e_dmg * 0.7)
+                log.append(f"🩸 {enemy.name} is Weakened! Attack power reduced.")
+            actual_dmg = p.take_damage(e_dmg)
+            log.append(f"💥 {enemy.name} unleashes a Heavy Strike! Deals {actual_dmg} critical damage (Armor absorbed {e_dmg - actual_dmg})!")
+        elif intent == "HEAL":
+            heal_amt = 35
+            enemy.hp += heal_amt
+            log.append(f"💚 {enemy.name} channels spiritual essence and heals for {heal_amt} HP!")
+        elif intent == "CURSE":
+            drain_amt = 15
+            p.energy -= drain_amt
+            e_dmg = int(enemy.attack_power * 0.5)
+            if is_weakened:
+                e_dmg = int(e_dmg * 0.7)
+                log.append(f"🩸 {enemy.name} is Weakened! Attack power reduced.")
+            actual_dmg = p.take_damage(e_dmg)
+            log.append(f"⚡ {enemy.name} chants a Curse! Drains {drain_amt} of your Reiryoku and deals {actual_dmg} damage!")
+            
+            # Apply Weakened to player
+            if random.random() < 0.5:
+                if not any(eff.get("name") == "Weakened" for eff in p.status_effects):
+                    p.status_effects.append({"name": "Weakened", "turns": 2, "value": 30, "icon": "🩸"})
+                    log.append(f"🩸 {p.name} has been inflicted with Weakened status for 2 turns!")
+        else:
+            e_dmg = enemy.attack_power
+            if is_weakened:
+                e_dmg = int(e_dmg * 0.7)
+            actual_dmg = p.take_damage(e_dmg)
+            log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage.")
     else:
-        e_dmg = enemy.attack_power
-        actual_dmg = p.take_damage(e_dmg)
-        log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage.")
+        log.append(f"⏳ {enemy.name} skipped turn due to status effects.")
 
     if p.hp <= 0:
         p.hp = 0
@@ -353,11 +421,31 @@ def combat_attack():
     
     enemy = state.current_enemies[0]
     p = state.player
+    log = []
     
-    # Player attacks enemy
-    p_dmg = p.attack_power
-    enemy.hp -= p_dmg
-    log = [f"{p.name} slashed {enemy.name} for {p_dmg} damage!"]
+    # Player's turn status resolution
+    player_frozen = resolve_status_effects(p, log)
+    
+    if p.hp <= 0:
+        p.hp = 0
+        log.append("You succumbed to status effects (Burned) and have been defeated! Respawning at Shibuya Station.")
+        p.current_location = "Shibuya Station"
+        p.hp = p.max_hp // 2
+        state.current_enemies = []
+        state.combat_log = log + state.combat_log
+        return {"message": "Defeated by status effects", "state": get_state()}
+        
+    if not player_frozen:
+        is_weakened = any(eff.get("name") == "Weakened" for eff in p.status_effects)
+        p_dmg = p.attack_power
+        if is_weakened:
+            p_dmg = int(p_dmg * 0.7)
+            log.append(f"🩸 {p.name} is Weakened! Attack power reduced.")
+        
+        enemy.hp -= p_dmg
+        log.append(f"{p.name} slashed {enemy.name} for {p_dmg} damage!")
+    else:
+        log.append(f"⏳ {p.name} skipped turn due to status effects.")
     
     if enemy.hp <= 0:
         log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
@@ -419,25 +507,58 @@ def combat_kido(req: KidoRequest):
     spell = req.spell_name.lower()
     log = []
     
-    if spell == "shakkaho":
-        cost = 15
-        if p.energy < cost:
-            raise HTTPException(status_code=400, detail="Insufficient Reiryoku (energy).")
-        p.energy -= cost
-        dmg = int(p.attack_power * 1.5)
-        enemy.hp -= dmg
-        log.append(f"{p.name} cast Hadō #31: Shakkahō! Red flames burst out dealing {dmg} damage!")
-    elif spell == "kaido":
-        cost = 20
-        if p.energy < cost:
-            raise HTTPException(status_code=400, detail="Insufficient Reiryoku (energy).")
-        p.energy -= cost
-        heal = p.level * 20 + 20
-        p.hp = min(p.max_hp, p.hp + heal)
-        log.append(f"{p.name} cast Kaidō! Soft green spiritual energy heals {heal} HP.")
+    # Player's turn status resolution
+    player_frozen = resolve_status_effects(p, log)
+    
+    if p.hp <= 0:
+        p.hp = 0
+        log.append("You succumbed to status effects (Burned) and have been defeated! Respawning at Shibuya Station.")
+        p.current_location = "Shibuya Station"
+        p.hp = p.max_hp // 2
+        state.current_enemies = []
+        state.combat_log = log + state.combat_log
+        return {"message": "Defeated by status effects", "state": get_state()}
+        
+    if not player_frozen:
+        if spell == "shakkaho":
+            cost = 15
+            if p.energy < cost:
+                raise HTTPException(status_code=400, detail="Insufficient Reiryoku (energy).")
+            p.energy -= cost
+            
+            is_weakened = any(eff.get("name") == "Weakened" for eff in p.status_effects)
+            dmg = int(p.attack_power * 1.5)
+            if is_weakened:
+                dmg = int(dmg * 0.7)
+                log.append(f"🩸 {p.name} is Weakened! Hadō damage reduced.")
+                
+            enemy.hp -= dmg
+            log.append(f"{p.name} cast Hadō #31: Shakkahō! Red flames burst out dealing {dmg} damage!")
+            
+            # 75% chance to apply Burned status
+            if random.random() < 0.75:
+                if not any(eff.get("name") == "Burned" for eff in enemy.status_effects):
+                    burn_dmg = 5 + p.level * 2
+                    enemy.status_effects.append({"name": "Burned", "turns": 3, "value": burn_dmg, "icon": "🔥"})
+                    log.append(f"🔥 {enemy.name} is set ablaze with Burned status for 3 turns ({burn_dmg} DMG/turn)!")
+                    
+        elif spell == "kaido":
+            cost = 20
+            if p.energy < cost:
+                raise HTTPException(status_code=400, detail="Insufficient Reiryoku (energy).")
+            p.energy -= cost
+            heal = p.level * 20 + 20
+            p.hp = min(p.max_hp, p.hp + heal)
+            log.append(f"{p.name} cast Kaidō! Soft green spiritual energy heals {heal} HP.")
+            
+            # Cleanse debuffs
+            p.status_effects = [eff for eff in p.status_effects if eff.get("name") not in ["Weakened", "Burned"]]
+            log.append(f"💚 Kaidō cleansed {p.name}'s physical and spiritual debuffs!")
+        else:
+            raise HTTPException(status_code=400, detail="Unknown spell.")
     else:
-        raise HTTPException(status_code=400, detail="Unknown spell.")
-
+        log.append(f"⏳ {p.name} skipped turn due to status effects.")
+        
     # Check if enemy is defeated
     if enemy.hp <= 0:
         log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
@@ -473,19 +594,45 @@ def combat_summon(req: SummonRequest):
     if p.energy < cost:
         raise HTTPException(status_code=400, detail="Insufficient Reiryoku (energy).")
         
-    p.energy -= cost
     log = []
     
-    if summon == "gojo":
-        dmg = 100
-        enemy.hp -= dmg
-        log.append(f"{p.name} summoned Satoru Gojo! Domain Expansion: Infinite Void freezes the enemy, dealing {dmg} absolute damage!")
-    elif summon == "shunsui":
-        dmg = 70
-        enemy.hp -= dmg
-        log.append(f"{p.name} summoned Shunsui Kyoraku! Kageoni strikes from the shadows, dealing {dmg} shadow damage!")
+    # Player's turn status resolution
+    player_frozen = resolve_status_effects(p, log)
+    
+    if p.hp <= 0:
+        p.hp = 0
+        log.append("You succumbed to status effects (Burned) and have been defeated! Respawning at Shibuya Station.")
+        p.current_location = "Shibuya Station"
+        p.hp = p.max_hp // 2
+        state.current_enemies = []
+        state.combat_log = log + state.combat_log
+        return {"message": "Defeated by status effects", "state": get_state()}
+        
+    if not player_frozen:
+        p.energy -= cost
+        if summon == "gojo":
+            dmg = 100
+            enemy.hp -= dmg
+            log.append(f"{p.name} summoned Satoru Gojo! Domain Expansion: Infinite Void freezes the enemy, dealing {dmg} absolute damage!")
+            
+            # Freeze enemy for 2 turns
+            enemy.status_effects = [eff for eff in enemy.status_effects if eff.get("name") != "Frozen"]
+            enemy.status_effects.append({"name": "Frozen", "turns": 2, "value": 0, "icon": "❄️"})
+            log.append(f"❄️ Infinite Void has frozen {enemy.name} solid for 2 turns!")
+            
+        elif summon == "shunsui":
+            dmg = 70
+            enemy.hp -= dmg
+            log.append(f"{p.name} summoned Shunsui Kyoraku! Kageoni strikes from the shadows, dealing {dmg} shadow damage!")
+            
+            # Weaken enemy for 2 turns
+            enemy.status_effects = [eff for eff in enemy.status_effects if eff.get("name") != "Weakened"]
+            enemy.status_effects.append({"name": "Weakened", "turns": 2, "value": 30, "icon": "🩸"})
+            log.append(f"🩸 Shunsui Kyoraku's shadow play has weakened {enemy.name} for 2 turns!")
+        else:
+            raise HTTPException(status_code=400, detail="Unknown summon.")
     else:
-        raise HTTPException(status_code=400, detail="Unknown summon.")
+        log.append(f"⏳ {p.name} skipped turn due to status effects.")
         
     # Check if enemy is defeated
     if enemy.hp <= 0:
@@ -515,13 +662,27 @@ def combat_item(req: CombatItemRequest):
     p = state.player
     log = []
     
-    # Check if player has the item and it's consumable
-    success = p.use_item(req.item_name)
-    if not success:
-        raise HTTPException(status_code=400, detail="Consumable item not found in inventory.")
-        
-    log.append(f"{p.name} used {req.item_name} in combat.")
+    # Player's turn status resolution
+    player_frozen = resolve_status_effects(p, log)
     
+    if p.hp <= 0:
+        p.hp = 0
+        log.append("You succumbed to status effects (Burned) and have been defeated! Respawning at Shibuya Station.")
+        p.current_location = "Shibuya Station"
+        p.hp = p.max_hp // 2
+        state.current_enemies = []
+        state.combat_log = log + state.combat_log
+        return {"message": "Defeated by status effects", "state": get_state()}
+        
+    if not player_frozen:
+        success = p.use_item(req.item_name)
+        if not success:
+            raise HTTPException(status_code=400, detail="Consumable item not found in inventory.")
+            
+        log.append(f"{p.name} used {req.item_name} in combat.")
+    else:
+        log.append(f"⏳ {p.name} skipped turn due to status effects.")
+        
     # Enemy counter attacks because using an item took the player's turn
     enemy_turn(p, enemy, log)
         
@@ -532,6 +693,8 @@ def combat_item(req: CombatItemRequest):
 shop_catalog = {
     "health_potion": Consumable("Health Potion", "Restores 50 HP", heal_hp=50, restore_energy=0, value=15),
     "spirit_pill": Consumable("Spirit Pill", "Restores 40 Reiryoku", heal_hp=0, restore_energy=40, value=25),
+    "shield_scroll": Consumable("Shield Scroll", "Generates a barrier that absorbs 40 damage. Lasts 3 turns.", heal_hp=0, restore_energy=0, effect={"name": "Shielded", "turns": 3, "value": 40, "icon": "🛡️"}, value=30),
+    "frost_scroll": Consumable("Frost Scroll", "Freezes the enemy solid for 1 turn.", heal_hp=0, restore_energy=0, effect={"name": "Frozen", "turns": 1, "value": 0, "icon": "❄️"}, value=40),
     "training_sword": Weapon("Wooden Shinai", "Basic training sword. Light but weak.", attack_bonus=5, value=30),
     "steel_katana": Weapon("Steel Katana", "A sharp steel katana forged in the human world.", attack_bonus=15, value=80),
     "asauchi": Weapon("Asauchi", "A nameless Zanpakuto. Awakens your inner spirit energy.", attack_bonus=35, value=180),

@@ -9,6 +9,7 @@ class Entity:
         self._attack_power = attack_power
         self._max_energy = energy
         self._energy = energy
+        self.status_effects = []
 
     @property
     def hp(self):
@@ -57,6 +58,19 @@ class Entity:
 
     def take_damage(self, amount):
         actual_damage = max(0, amount)
+        
+        # Apply Shielded absorption if present
+        shield_idx = -1
+        for idx, effect in enumerate(self.status_effects):
+            if effect.get("name") == "Shielded":
+                shield_idx = idx
+                break
+        if shield_idx != -1:
+            shield_val = self.status_effects[shield_idx].get("value", 0)
+            absorbed = min(shield_val, actual_damage)
+            actual_damage -= absorbed
+            self.status_effects[shield_idx]["value"] -= absorbed
+            
         self.hp -= actual_damage
         return actual_damage
 
@@ -88,6 +102,7 @@ class Item:
         elif isinstance(self, Consumable):
             data["heal_hp"] = self.heal_hp
             data["restore_energy"] = self.restore_energy
+            data["effect"] = self.effect
         return data
 
     @classmethod
@@ -98,7 +113,7 @@ class Item:
         elif t == "armor":
             return Armor(data["name"], data["description"], data["defense_bonus"], data.get("value", 0))
         elif t == "consumable":
-            return Consumable(data["name"], data["description"], data.get("heal_hp", 0), data.get("restore_energy", 0), data.get("value", 0))
+            return Consumable(data["name"], data["description"], data.get("heal_hp", 0), data.get("restore_energy", 0), data.get("effect"), data.get("value", 0))
         return Item(data["name"], data["description"], t, data.get("value", 0))
 
 
@@ -115,16 +130,19 @@ class Armor(Item):
 
 
 class Consumable(Item):
-    def __init__(self, name, description, heal_hp=0, restore_energy=0, value=0):
+    def __init__(self, name, description, heal_hp=0, restore_energy=0, effect=None, value=0):
         super().__init__(name, description, "consumable", value)
         self.heal_hp = heal_hp
         self.restore_energy = restore_energy
+        self.effect = effect
 
     def use(self, target):
         if self.heal_hp > 0:
             target.hp += self.heal_hp
         if self.restore_energy > 0:
             target.energy += self.restore_energy
+        if self.effect:
+            target.status_effects.append(self.effect.copy())
         return True
 
 
@@ -155,7 +173,8 @@ class Player(Entity):
             "summons": self.summons,
             "equipped_weapon": self.equipped_weapon.to_dict() if self.equipped_weapon else None,
             "equipped_armor": self.equipped_armor.to_dict() if self.equipped_armor else None,
-            "current_location": self.current_location
+            "current_location": self.current_location,
+            "status_effects": self.status_effects
         }
 
     @classmethod
@@ -170,6 +189,7 @@ class Player(Entity):
         p.summons = data.get("summons", [])
         p.inventory = [Item.from_dict(item_data) for item_data in data.get("inventory", [])]
         p.current_location = data.get("current_location", "Shibuya Station")
+        p.status_effects = data.get("status_effects", [])
         
         eq_w = data.get("equipped_weapon")
         if eq_w:
@@ -192,8 +212,7 @@ class Player(Entity):
     def take_damage(self, amount):
         defense = self.equipped_armor.defense_bonus if self.equipped_armor else 0
         actual_damage = max(0, amount - defense)
-        self.hp -= actual_damage
-        return actual_damage
+        return super().take_damage(actual_damage)
 
     def add_item(self, item):
         self.inventory.append(item)

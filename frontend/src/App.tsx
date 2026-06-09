@@ -876,7 +876,15 @@ function App() {
                   <div className="relative z-10 flex items-center justify-between flex-1 py-2">
                     {/* Player Slot (Left) */}
                     <div className="flex flex-col items-center w-[38%]">
-                      <div className="w-14 h-14 bg-gradient-to-br from-indigo-950 to-indigo-900 rounded-full p-0.5 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(99,102,241,0.2)] relative">
+                      <div className={`w-14 h-14 bg-gradient-to-br from-indigo-950 to-indigo-900 rounded-full p-0.5 border flex items-center justify-center relative transition-all duration-300 ${
+                        (player as any).status_effects?.some((eff: any) => eff.name === 'Shielded')
+                          ? 'border-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.6)]'
+                          : (player as any).status_effects?.some((eff: any) => eff.name === 'Frozen')
+                            ? 'border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.6)]'
+                            : (player as any).status_effects?.some((eff: any) => eff.name === 'Burned')
+                              ? 'border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.6)] animate-pulse'
+                              : 'border-indigo-500/30 shadow-[0_0_12px_rgba(99,102,241,0.2)]'
+                      }`}>
                         <svg viewBox="0 0 100 100" className="w-10 h-10">
                           <circle cx="50" cy="50" r="48" fill="none" stroke="#6366f1" strokeWidth="2" strokeDasharray="5 3" />
                           <path d="M30 75 Q50 35 70 75 Z" fill="#6366f1" opacity="0.8" />
@@ -900,6 +908,31 @@ function App() {
                       <span className="text-[11px] font-bold text-white mt-1.5 truncate max-w-full">{player.name}</span>
                       <span className="text-[8px] uppercase tracking-wider text-indigo-400">LVL {player.level}</span>
                       
+                      {/* Status Effects List */}
+                      {(player as any).status_effects && (player as any).status_effects.length > 0 && (
+                        <div className="flex flex-wrap gap-1 justify-center mt-1 max-w-full">
+                          {(player as any).status_effects.map((eff: any, i: number) => (
+                            <span 
+                              key={i} 
+                              className={`text-[7px] font-black uppercase px-1 py-0.2 rounded border flex items-center gap-0.5 shadow-[0_0_6px_rgba(255,255,255,0.05)] transition-all ${
+                                eff.name === 'Burned' 
+                                  ? 'bg-orange-950/40 border-orange-500/50 text-orange-400 animate-pulse'
+                                  : eff.name === 'Frozen'
+                                    ? 'bg-sky-950/40 border-sky-500/50 text-sky-300 animate-pulse'
+                                    : eff.name === 'Shielded'
+                                      ? 'bg-indigo-950/40 border-indigo-500/50 text-indigo-300'
+                                      : 'bg-red-950/40 border-red-500/50 text-red-400'
+                              }`}
+                              title={`${eff.name} (${eff.turns} turns left)`}
+                            >
+                              <span>{eff.icon}</span>
+                              <span>{eff.turns}T</span>
+                              {eff.name === 'Shielded' && <span className="font-mono text-[6px] text-indigo-300/80">({eff.value})</span>}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       {/* Targeting Alert Tag */}
                       {(activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' ? (
                         <span className="text-[7px] uppercase font-black tracking-widest text-red-500 bg-red-950/50 px-1 py-0.5 rounded border border-red-500/20 mt-1 animate-pulse">
@@ -922,7 +955,15 @@ function App() {
 
                     {/* Enemy Slot (Right) */}
                     <div className="flex flex-col items-center w-[38%]">
-                      <div className="w-14 h-14 bg-gradient-to-br from-red-950 to-red-900 rounded-full p-0.5 border border-red-500/30 flex items-center justify-center shadow-[0_0_12px_rgba(239,68,68,0.3)] relative">
+                      <div className={`w-14 h-14 bg-gradient-to-br from-red-950 to-red-900 rounded-full p-0.5 border flex items-center justify-center relative transition-all duration-300 ${
+                        (activeEnemy as any).status_effects?.some((eff: any) => eff.name === 'Shielded')
+                          ? 'border-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.6)]'
+                          : (activeEnemy as any).status_effects?.some((eff: any) => eff.name === 'Frozen')
+                            ? 'border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.6)]'
+                            : (activeEnemy as any).status_effects?.some((eff: any) => eff.name === 'Burned')
+                              ? 'border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.6)] animate-pulse'
+                              : 'border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.3)]'
+                      }`}>
                         <EnemyAvatar name={activeEnemy.name} />
 
                         {/* If healing, show healing glow ring */}
@@ -932,6 +973,31 @@ function App() {
                       </div>
                       <span className="text-[11px] font-bold text-white mt-1.5 truncate max-w-full">{activeEnemy.name}</span>
                       <span className="text-[8px] uppercase tracking-wider text-red-400">HOSTILE</span>
+
+                      {/* Status Effects List */}
+                      {(activeEnemy as any).status_effects && (activeEnemy as any).status_effects.length > 0 && (
+                        <div className="flex flex-wrap gap-1 justify-center mt-1 max-w-full">
+                          {(activeEnemy as any).status_effects.map((eff: any, i: number) => (
+                            <span 
+                              key={i} 
+                              className={`text-[7px] font-black uppercase px-1 py-0.2 rounded border flex items-center gap-0.5 shadow-[0_0_6px_rgba(255,255,255,0.05)] transition-all ${
+                                eff.name === 'Burned' 
+                                  ? 'bg-orange-950/40 border-orange-500/50 text-orange-400 animate-pulse'
+                                  : eff.name === 'Frozen'
+                                    ? 'bg-sky-950/40 border-sky-500/50 text-sky-300 animate-pulse'
+                                    : eff.name === 'Shielded'
+                                      ? 'bg-indigo-950/40 border-indigo-500/50 text-indigo-300'
+                                      : 'bg-red-950/40 border-red-500/50 text-red-400'
+                              }`}
+                              title={`${eff.name} (${eff.turns} turns left)`}
+                            >
+                              <span>{eff.icon}</span>
+                              <span>{eff.turns}T</span>
+                              {eff.name === 'Shielded' && <span className="font-mono text-[6px] text-indigo-300/80">({eff.value})</span>}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
                       {/* Intent Warning Badges */}
                       {(activeEnemy as any).next_intent && (
