@@ -41,12 +41,28 @@ interface EnemyState {
   gold_reward: number;
 }
 
+interface VictoryRewards {
+  enemy_name: string;
+  xp_reward: number;
+  gold_reward: number;
+  item_reward: {
+    name: string;
+    description: string;
+    item_type: string;
+    value: number;
+    attack_bonus?: number;
+    defense_bonus?: number;
+  } | null;
+  player_level_up: boolean;
+}
+
 interface GameStateData {
   player: PlayerState;
   combat: {
     enemies: EnemyState[];
     log: string[];
   };
+  victory_rewards?: VictoryRewards | null;
 }
 
 interface MapLocation {
@@ -417,6 +433,24 @@ function App() {
   const attackEnemy = () => handleAction('combat/attack')
   const runAway = () => handleAction('combat/run')
 
+  const claimVictoryRewards = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/combat/claim_rewards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      if (!res.ok) throw new Error("Failed to claim rewards")
+      const data = await res.json() as { state?: GameStateData }
+      if (data.state) {
+        setGameState(data.state)
+        // Reset combat menu view
+        setCombatMenu('main')
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   const castKido = async (spellName: string) => {
     try {
       const res = await fetch(`${API_BASE}/combat/kido`, {
@@ -545,6 +579,7 @@ function App() {
   const inCombat = combat.enemies && combat.enemies.length > 0
   const activeEnemy = inCombat ? combat.enemies[0] : null
   const enemyHpPct = activeEnemy ? (activeEnemy.hp / activeEnemy.max_hp) * 100 : 0
+  const victoryRewards = gameState?.victory_rewards
 
   useEffect(() => {
     if (!inCombat) {
@@ -844,14 +879,98 @@ function App() {
           }`}>
             <div>
               <h2 className={`text-xl font-bold border-l-4 pl-3 mb-4 uppercase tracking-wider transition-all duration-300 ${
-                inCombat 
-                  ? 'text-red-500 border-red-500 [text-shadow:0_0_8px_rgba(239,68,68,0.4)]'
-                  : 'text-white border-neon-cyan'
+                victoryRewards
+                  ? 'text-yellow-500 border-yellow-500 [text-shadow:0_0_8px_rgba(234,179,8,0.4)]'
+                  : inCombat 
+                    ? 'text-red-500 border-red-500 [text-shadow:0_0_8px_rgba(239,68,68,0.4)]'
+                    : 'text-white border-neon-cyan'
               }`}>
-                {inCombat ? 'Spiritual Combat Arena' : 'Tactical Hologram Map'}
+                {victoryRewards ? 'Purification Rewards' : inCombat ? 'Spiritual Combat Arena' : 'Tactical Hologram Map'}
               </h2>
 
-              {inCombat && activeEnemy ? (
+              {victoryRewards ? (
+                <div className="relative w-full h-[220px] bg-gradient-to-b from-[#120f06] to-[#050401] border border-yellow-500/30 rounded-lg overflow-hidden mb-4 shadow-[0_0_25px_rgba(234,179,8,0.2)] flex flex-col justify-between p-4 animate-fade-in text-center">
+                  {/* Grid backdrop */}
+                  <div className="absolute inset-0 bg-[linear-gradient(rgba(234,179,8,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(234,179,8,0.015)_1px,transparent_1px)] bg-[size:15px_15px] pointer-events-none"></div>
+                  
+                  {/* Top Header */}
+                  <div className="relative z-10">
+                    <span className="text-[10px] uppercase font-black tracking-widest text-yellow-500 [text-shadow:0_0_10px_rgba(234,179,8,0.8)] animate-pulse">
+                      ✨ Purified Hollow ✨
+                    </span>
+                    <h3 className="text-xl font-black text-white italic tracking-wider mt-1 [text-shadow:0_0_12px_rgba(255,255,255,0.4)]">
+                      VICTORY
+                    </h3>
+                    <p className="text-[9px] uppercase tracking-wider text-yellow-400/80 -mt-0.5">
+                      {victoryRewards.enemy_name} Purified
+                    </p>
+                  </div>
+
+                  {/* Mid Rewards Panel */}
+                  <div className="relative z-10 flex gap-4 my-1 items-center justify-center">
+                    {/* XP & Gold Container */}
+                    <div className="flex flex-col gap-2 items-center flex-1 max-w-[150px]">
+                      {/* XP Bar */}
+                      <div className="w-full text-left">
+                        <div className="flex justify-between items-baseline mb-0.5">
+                          <span className="text-[8px] uppercase font-extrabold text-yellow-500">Exp Earned</span>
+                          <span className="font-mono text-[9px] text-white">+{victoryRewards.xp_reward} XP</span>
+                        </div>
+                        <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden border border-white/5 relative">
+                          <div 
+                            className="h-full rounded-full bg-gradient-to-r from-yellow-600 to-yellow-400 shadow-[0_0_6px_rgba(234,179,8,0.5)] transition-all duration-1000 ease-out"
+                            style={{ width: `${Math.min(100, (player.xp / (player.level * 100)) * 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      {/* Gold Reward */}
+                      <div className="flex items-center gap-2 bg-yellow-950/20 border border-yellow-500/20 px-3 py-1 rounded-lg w-full justify-center">
+                        <span className="text-sm animate-bounce [animation-duration:2s]">🪙</span>
+                        <span className="text-[11px] font-black text-yellow-400 animate-pulse">+{victoryRewards.gold_reward} GOLD</span>
+                      </div>
+                    </div>
+
+                    {/* Item Drop Panel */}
+                    {victoryRewards.item_reward ? (
+                      <div className="flex items-center gap-2 bg-purple-950/20 border border-purple-500/30 p-2 rounded-lg flex-1 text-left shadow-[0_0_12px_rgba(168,85,247,0.15)] animate-reward-item max-w-[160px]">
+                        <div className="text-xl p-1.5 bg-purple-950/40 border border-purple-500/30 rounded-lg">
+                          {victoryRewards.item_reward.item_type === 'weapon' ? '⚔️' : victoryRewards.item_reward.item_type === 'armor' ? '🛡️' : '📜'}
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[7px] uppercase font-black tracking-widest text-purple-400">Rare Drop</span>
+                          <span className="text-[9px] font-bold text-white truncate">{victoryRewards.item_reward.name}</span>
+                          <span className="text-[7px] text-gray-400 truncate leading-tight">{victoryRewards.item_reward.description}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center bg-white/5 border border-white/10 p-2 rounded-lg flex-1 text-center max-w-[160px] h-[52px]">
+                        <span className="text-xs text-gray-500">❌</span>
+                        <span className="text-[7px] uppercase tracking-widest text-gray-500 mt-1">No Item Dropped</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Level Up Banner Overlay */}
+                  {victoryRewards.player_level_up && (
+                    <div className="absolute inset-0 bg-yellow-500/10 flex items-center justify-center z-20 pointer-events-none animate-pulse">
+                      <div className="bg-yellow-500 text-black font-black uppercase text-[10px] tracking-widest px-4 py-1.5 transform -rotate-12 shadow-[0_0_15px_rgba(234,179,8,0.8)] border-2 border-black">
+                        🎉 LEVEL UP! reached lvl {player.level} 🎉
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Claim Button */}
+                  <div className="relative z-10 mt-1">
+                    <button 
+                      onClick={claimVictoryRewards}
+                      className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-black border border-yellow-400/40 rounded-lg py-2 px-4 font-black text-[10px] uppercase tracking-widest cursor-pointer shadow-[0_4px_12px_rgba(234,179,8,0.3)] transition-all duration-150 active:translate-y-0.5"
+                    >
+                      CLAIM REWARDS & CONTINUE
+                    </button>
+                  </div>
+                </div>
+              ) : inCombat && activeEnemy ? (
                 <div className="relative w-full h-[220px] bg-[#0c0505] border border-red-500/30 rounded-lg overflow-hidden mb-4 shadow-[0_0_20px_rgba(239,68,68,0.15)] flex flex-col justify-between p-4">
                   {/* Grid / Sparks Background */}
                   <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.02)_1px,transparent_1px)] bg-[size:15px_15px] pointer-events-none"></div>
@@ -1246,7 +1365,11 @@ function App() {
               </div>
 
               {/* Control Actions */}
-              {inCombat ? (
+              {victoryRewards ? (
+                <div className="mb-4 text-center py-4 bg-yellow-950/10 border border-yellow-500/10 rounded-lg shadow-[inset_0_2px_8px_rgba(0,0,0,0.6)]">
+                  <span className="text-[10px] uppercase font-black tracking-widest text-yellow-500/80 animate-pulse">Claim Victory Rewards Above</span>
+                </div>
+              ) : inCombat ? (
                 <div className="mb-4">
                   {combatMenu === 'main' && (
                     <div className="flex flex-col gap-3">

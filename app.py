@@ -23,6 +23,7 @@ class GameState:
         self.player = Player(name="Ichigo")
         self.current_enemies: List[Enemy] = []
         self.combat_log: List[str] = []
+        self.combat_victory_rewards = None
 
 state = GameState()
 
@@ -99,7 +100,8 @@ def get_state():
                 } for e in state.current_enemies
             ],
             "log": state.combat_log
-        }
+        },
+        "victory_rewards": state.combat_victory_rewards
     }
 
 @app.post("/api/player/reset")
@@ -108,6 +110,7 @@ def reset_player(name: Optional[str] = "Ichigo"):
     state.player.gold = 100
     state.current_enemies = []
     state.combat_log = ["A new journey begins."]
+    state.combat_victory_rewards = None
     return get_state()
 
 @app.post("/api/player/equip")
@@ -414,6 +417,43 @@ def enemy_turn(p, enemy, log):
         
     enemy.prepare_next_intent()
 
+def handle_enemy_defeat(p, enemy, log):
+    log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
+    p.xp += enemy.xp_reward
+    p.gold += enemy.gold_reward
+    
+    # 40% chance of random item drop
+    dropped_item = None
+    if random.random() < 0.40:
+        catalog_items = list(shop_catalog.values())
+        chosen = random.choice(catalog_items)
+        if chosen.item_type == "weapon":
+            dropped_item = Weapon(chosen.name, chosen.description, chosen.attack_bonus, chosen.value)
+        elif chosen.item_type == "armor":
+            dropped_item = Armor(chosen.name, chosen.description, chosen.defense_bonus, chosen.value)
+        else:
+            dropped_item = Consumable(chosen.name, chosen.description, chosen.heal_hp, chosen.restore_energy, getattr(chosen, 'effect', None), chosen.value)
+        p.add_item(dropped_item)
+        log.append(f"🎁 Found a drop: {dropped_item.name}!")
+        
+    state.combat_victory_rewards = {
+        "enemy_name": enemy.name,
+        "xp_reward": enemy.xp_reward,
+        "gold_reward": enemy.gold_reward,
+        "item_reward": dropped_item.to_dict() if dropped_item else None,
+        "player_level_up": True if p.xp >= p.level * 100 else False
+    }
+    
+    # Level up check
+    if p.xp >= p.level * 100:
+        p.xp -= p.level * 100
+        p.level += 1
+        p.max_hp += 20
+        p.hp = p.max_hp
+        log.append(f"LEVEL UP! Reached level {p.level}!")
+        
+    state.current_enemies = []
+
 @app.post("/api/combat/attack")
 def combat_attack():
     if not state.current_enemies:
@@ -448,20 +488,13 @@ def combat_attack():
         log.append(f"⏳ {p.name} skipped turn due to status effects.")
     
     if enemy.hp <= 0:
-        log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
-        p.xp += enemy.xp_reward
-        p.gold += enemy.gold_reward
-        # Level up check
-        if p.xp >= p.level * 100:
-            p.xp -= p.level * 100
-            p.level += 1
-            p.max_hp += 20
-            p.hp = p.max_hp
-            log.append(f"LEVEL UP! Reached level {p.level}!")
-        state.current_enemies = []
+        handle_enemy_defeat(p, enemy, log)
     else:
         # Enemy counter attacks using dynamic behaviors
         enemy_turn(p, enemy, log)
+        if enemy.hp <= 0:
+            # Handle death from Burned at start of enemy turn
+            handle_enemy_defeat(p, enemy, log)
             
     state.combat_log = log + state.combat_log
     return {"message": "Attack executed", "state": get_state()}
@@ -559,21 +592,13 @@ def combat_kido(req: KidoRequest):
     else:
         log.append(f"⏳ {p.name} skipped turn due to status effects.")
         
-    # Check if enemy is defeated
     if enemy.hp <= 0:
-        log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
-        p.xp += enemy.xp_reward
-        p.gold += enemy.gold_reward
-        if p.xp >= p.level * 100:
-            p.xp -= p.level * 100
-            p.level += 1
-            p.max_hp += 20
-            p.hp = p.max_hp
-            log.append(f"LEVEL UP! Reached level {p.level}!")
-        state.current_enemies = []
+        handle_enemy_defeat(p, enemy, log)
     else:
         # Enemy counter attacks using dynamic behaviors
         enemy_turn(p, enemy, log)
+        if enemy.hp <= 0:
+            handle_enemy_defeat(p, enemy, log)
             
     state.combat_log = log + state.combat_log
     return {"message": "Kido cast successfully", "state": get_state()}
@@ -634,21 +659,13 @@ def combat_summon(req: SummonRequest):
     else:
         log.append(f"⏳ {p.name} skipped turn due to status effects.")
         
-    # Check if enemy is defeated
     if enemy.hp <= 0:
-        log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
-        p.xp += enemy.xp_reward
-        p.gold += enemy.gold_reward
-        if p.xp >= p.level * 100:
-            p.xp -= p.level * 100
-            p.level += 1
-            p.max_hp += 20
-            p.hp = p.max_hp
-            log.append(f"LEVEL UP! Reached level {p.level}!")
-        state.current_enemies = []
+        handle_enemy_defeat(p, enemy, log)
     else:
         # Enemy counter attacks using dynamic behaviors
         enemy_turn(p, enemy, log)
+        if enemy.hp <= 0:
+            handle_enemy_defeat(p, enemy, log)
             
     state.combat_log = log + state.combat_log
     return {"message": "Summon executed", "state": get_state()}
@@ -685,6 +702,8 @@ def combat_item(req: CombatItemRequest):
         
     # Enemy counter attacks because using an item took the player's turn
     enemy_turn(p, enemy, log)
+    if enemy.hp <= 0:
+        handle_enemy_defeat(p, enemy, log)
         
     state.combat_log = log + state.combat_log
     return {"message": f"Used {req.item_name}", "state": get_state()}
@@ -708,6 +727,11 @@ class BuyRequest(BaseModel):
 
 class SellRequest(BaseModel):
     item_name: str
+
+@app.post("/api/combat/claim_rewards")
+def claim_rewards():
+    state.combat_victory_rewards = None
+    return {"message": "Rewards claimed", "state": get_state()}
 
 @app.get("/api/shop/items")
 def get_shop_items():
