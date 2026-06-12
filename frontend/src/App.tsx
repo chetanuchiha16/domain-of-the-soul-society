@@ -60,6 +60,13 @@ interface GameStateData {
   player: PlayerState;
   combat: {
     enemies: EnemyState[];
+    active_summon?: {
+      name: string;
+      hp: number;
+      max_hp: number;
+      turns_left: number;
+      status_effects: any[];
+    } | null;
     log: string[];
   };
   victory_rewards?: VictoryRewards | null;
@@ -73,6 +80,34 @@ interface MapLocation {
   y: number;
   connections: string[];
 }
+
+const SummonAvatar = ({ name }: { name: string }) => {
+  const lowercaseName = name.toLowerCase();
+  if (lowercaseName.includes("gojo")) {
+    return (
+      <svg viewBox="0 0 100 100" className="w-10 h-10">
+        <circle cx="50" cy="50" r="45" fill="#082f49" stroke="#38bdf8" strokeWidth="2" strokeDasharray="3 3" />
+        <path d="M25 45 L75 45 L70 58 L30 58 Z" fill="#ffffff" stroke="#0284c7" strokeWidth="1.5" />
+        <circle cx="50" cy="51" r="5" fill="#38bdf8" className="animate-ping" />
+        <path d="M20 30 Q50 5 80 30" fill="none" stroke="#f8fafc" strokeWidth="3" />
+        <path d="M35 68 Q50 85 65 68" fill="none" stroke="#38bdf8" strokeWidth="2" />
+      </svg>
+    );
+  } else {
+    // Shunsui
+    return (
+      <svg viewBox="0 0 100 100" className="w-10 h-10">
+        <circle cx="50" cy="50" r="45" fill="#500725" stroke="#f472b6" strokeWidth="2" />
+        <path d="M15 45 Q50 15 85 45 Z" fill="#b91c1c" opacity="0.8" />
+        <path d="M30 50 Q50 32 70 50 Z" fill="#fbcfe8" />
+        <circle cx="50" cy="58" r="4" fill="#fbcfe8" />
+        {/* Two crossed swords representation */}
+        <line x1="30" y1="75" x2="70" y2="35" stroke="#db2777" strokeWidth="2.5" />
+        <line x1="70" y1="75" x2="30" y2="35" stroke="#db2777" strokeWidth="2.5" />
+      </svg>
+    );
+  }
+};
 
 const EnemyAvatar = ({ name }: { name: string }) => {
   const lowercaseName = name.toLowerCase();
@@ -578,8 +613,12 @@ function App() {
   const currentLocDetails = mapData[player.current_location]
   const inCombat = combat.enemies && combat.enemies.length > 0
   const activeEnemy = inCombat ? combat.enemies[0] : null
+  const activeSummon = inCombat ? (combat as any).active_summon : null
   const enemyHpPct = activeEnemy ? (activeEnemy.hp / activeEnemy.max_hp) * 100 : 0
   const victoryRewards = gameState?.victory_rewards
+  
+  const isPlayerTargeted = !!(activeEnemy && (activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' && (activeEnemy as any).target !== 'summon')
+  const isSummonTargeted = !!(activeEnemy && (activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' && (activeEnemy as any).target === 'summon')
 
   useEffect(() => {
     if (!inCombat) {
@@ -994,7 +1033,7 @@ function App() {
                   {/* VS Layout */}
                   <div className="relative z-10 flex items-center justify-between flex-1 py-2">
                     {/* Player Slot (Left) */}
-                    <div className="flex flex-col items-center w-[38%]">
+                    <div className="flex flex-col items-center w-[38%]" style={{ width: activeSummon ? '28%' : '38%' }}>
                       <div className={`w-14 h-14 bg-gradient-to-br from-indigo-950 to-indigo-900 rounded-full p-0.5 border flex items-center justify-center relative transition-all duration-300 ${
                         (player as any).status_effects?.some((eff: any) => eff.name === 'Shielded')
                           ? 'border-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.6)]'
@@ -1011,7 +1050,7 @@ function App() {
                         </svg>
                         
                         {/* Targeted crosshair scope overlay */}
-                        {(activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' && (
+                        {isPlayerTargeted && (
                           <>
                             <div className="absolute inset-0 border-2 border-red-500 rounded-full animate-ping pointer-events-none opacity-60"></div>
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -1053,7 +1092,7 @@ function App() {
                       )}
 
                       {/* Targeting Alert Tag */}
-                      {(activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' ? (
+                      {isPlayerTargeted ? (
                         <span className="text-[7px] uppercase font-black tracking-widest text-red-500 bg-red-950/50 px-1 py-0.5 rounded border border-red-500/20 mt-1 animate-pulse">
                           ⚠️ TARGETED
                         </span>
@@ -1064,8 +1103,76 @@ function App() {
                       )}
                     </div>
 
+                    {/* Active Summon Slot */}
+                    {activeSummon && (
+                      <div className="flex flex-col items-center w-[28%] animate-fade-in">
+                        <div className={`w-14 h-14 bg-gradient-to-br from-slate-950 to-slate-900 rounded-full p-0.5 border flex items-center justify-center relative transition-all duration-300 ${
+                          activeSummon.name.toLowerCase().includes("gojo")
+                            ? 'border-sky-450 shadow-[0_0_12px_rgba(56,189,248,0.3)]'
+                            : 'border-pink-450 shadow-[0_0_12px_rgba(244,114,182,0.3)]'
+                        }`}>
+                          <SummonAvatar name={activeSummon.name} />
+
+                          {/* Targeted crosshair scope overlay */}
+                          {isSummonTargeted && (
+                            <>
+                              <div className="absolute inset-0 border-2 border-red-500 rounded-full animate-ping pointer-events-none opacity-60"></div>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <svg className="w-14 h-14 text-red-500 animate-spin bg-transparent pointer-events-none [animation-duration:8s]" viewBox="0 0 100 100">
+                                  <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4 8" />
+                                  <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="1" />
+                                  <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="1" />
+                                </svg>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <span className="text-[11px] font-bold text-white mt-1.5 truncate max-w-full text-center">
+                          {activeSummon.name.split(" ")[0]}
+                        </span>
+                        <span className="text-[7px] uppercase font-bold tracking-wider text-slate-400">
+                          ⏳ {activeSummon.turns_left} TURNS
+                        </span>
+
+                        {/* Status Effects List */}
+                        {activeSummon.status_effects && activeSummon.status_effects.length > 0 && (
+                          <div className="flex flex-wrap gap-1 justify-center mt-1 max-w-full">
+                            {activeSummon.status_effects.map((eff: any, i: number) => (
+                              <span 
+                                key={i} 
+                                className={`text-[7px] font-black uppercase px-1 py-0.2 rounded border flex items-center gap-0.5 shadow-[0_0_6px_rgba(255,255,255,0.05)] transition-all ${
+                                  eff.name === 'Burned' 
+                                    ? 'bg-orange-950/40 border-orange-500/50 text-orange-400 animate-pulse'
+                                    : eff.name === 'Frozen'
+                                      ? 'bg-sky-950/40 border-sky-500/50 text-sky-300 animate-pulse'
+                                      : eff.name === 'Shielded'
+                                        ? 'bg-indigo-950/40 border-indigo-500/50 text-indigo-300'
+                                        : 'bg-red-950/40 border-red-500/50 text-red-400'
+                                }`}
+                                title={`${eff.name} (${eff.turns} turns left)`}
+                              >
+                                <span>{eff.icon}</span>
+                                <span>{eff.turns}T</span>
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Targeting Alert Tag */}
+                        {isSummonTargeted ? (
+                          <span className="text-[7px] uppercase font-black tracking-widest text-red-500 bg-red-950/50 px-1 py-0.5 rounded border border-red-500/20 mt-1 animate-pulse">
+                            ⚠️ TARGETED
+                          </span>
+                        ) : (
+                          <span className="text-[7px] uppercase font-bold tracking-widest text-gray-500 mt-1">
+                            SAFE
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     {/* VS Emblem (Center) */}
-                    <div className="flex flex-col items-center justify-center w-[20%] select-none">
+                    <div className="flex flex-col items-center justify-center select-none" style={{ width: activeSummon ? '14%' : '20%' }}>
                       <span className="text-2xl font-black text-red-500 italic [text-shadow:0_0_12px_rgba(239,68,68,0.8)] animate-bounce">
                         VS
                       </span>
@@ -1073,7 +1180,7 @@ function App() {
                     </div>
 
                     {/* Enemy Slot (Right) */}
-                    <div className="flex flex-col items-center w-[38%]">
+                    <div className="flex flex-col items-center w-[38%]" style={{ width: activeSummon ? '30%' : '38%' }}>
                       <div className={`w-14 h-14 bg-gradient-to-br from-red-950 to-red-900 rounded-full p-0.5 border flex items-center justify-center relative transition-all duration-300 ${
                         (activeEnemy as any).status_effects?.some((eff: any) => eff.name === 'Shielded')
                           ? 'border-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.6)]'
@@ -1153,6 +1260,28 @@ function App() {
                         ></div>
                       </div>
                     </div>
+
+                    {/* Active Summon Health Bar */}
+                    {activeSummon && (
+                      <div className="flex-1 animate-fade-in">
+                        <div className="flex justify-between items-baseline mb-0.5 text-left">
+                          <span className={`text-[9px] uppercase font-bold ${activeSummon.name.toLowerCase().includes("gojo") ? 'text-sky-300' : 'text-pink-300'}`}>
+                            {activeSummon.name.split(" ")[0]} HP
+                          </span>
+                          <span className="font-mono text-[9px] text-white">{activeSummon.hp}/{activeSummon.max_hp}</span>
+                        </div>
+                        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden border border-white/5">
+                          <div 
+                            className={`h-full rounded-full bg-gradient-to-r ${
+                              activeSummon.name.toLowerCase().includes("gojo")
+                                ? 'from-sky-700 to-sky-500 shadow-[0_0_6px_rgba(56,189,248,0.5)]'
+                                : 'from-pink-700 to-pink-500 shadow-[0_0_6px_rgba(244,114,182,0.5)]'
+                            } transition-all duration-300`}
+                            style={{ width: `${(activeSummon.hp / activeSummon.max_hp) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Enemy Health Bar (Right) */}
                     <div className="flex-1">

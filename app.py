@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 import random
 
-from models import Player, Weapon, Armor, Consumable, Enemy, Location
+from models import Player, Weapon, Armor, Consumable, Enemy, Location, Summon
 
 app = FastAPI(title="Domain of the Soul Society API", version="1.0.0")
 
@@ -24,6 +24,7 @@ class GameState:
         self.current_enemies: List[Enemy] = []
         self.combat_log: List[str] = []
         self.combat_victory_rewards = None
+        self.active_summon: Optional[Summon] = None
 
 state = GameState()
 
@@ -96,9 +97,11 @@ def get_state():
                     "xp_reward": e.xp_reward,
                     "gold_reward": e.gold_reward,
                     "next_intent": e.next_intent,
+                    "target": getattr(e, "target", "player"),
                     "status_effects": e.status_effects
                 } for e in state.current_enemies
             ],
+            "active_summon": state.active_summon.to_dict() if state.active_summon else None,
             "log": state.combat_log
         },
         "victory_rewards": state.combat_victory_rewards
@@ -111,6 +114,7 @@ def reset_player(name: Optional[str] = "Ichigo"):
     state.current_enemies = []
     state.combat_log = ["A new journey begins."]
     state.combat_victory_rewards = None
+    state.active_summon = None
     return get_state()
 
 @app.post("/api/player/equip")
@@ -366,20 +370,35 @@ def enemy_turn(p, enemy, log):
         # Check if enemy is Weakened
         is_weakened = any(eff.get("name") == "Weakened" for eff in enemy.status_effects)
         
+        # Determine target entity
+        target_entity = p
+        target_name = p.name
+        is_summon = False
+        if state.active_summon and getattr(enemy, "target", "player") == "summon":
+            target_entity = state.active_summon
+            target_name = state.active_summon.name
+            is_summon = True
+
         if intent == "ATTACK":
             e_dmg = enemy.attack_power
             if is_weakened:
                 e_dmg = int(e_dmg * 0.7)
                 log.append(f"🩸 {enemy.name} is Weakened! Attack power reduced.")
-            actual_dmg = p.take_damage(e_dmg)
-            log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
+            actual_dmg = target_entity.take_damage(e_dmg)
+            if is_summon:
+                log.append(f"{enemy.name} counter-attacks summon {target_name} for {actual_dmg} damage!")
+            else:
+                log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage (Armor absorbed {e_dmg - actual_dmg}).")
         elif intent == "HEAVY_ATTACK":
             e_dmg = int(enemy.attack_power * 1.8)
             if is_weakened:
                 e_dmg = int(e_dmg * 0.7)
                 log.append(f"🩸 {enemy.name} is Weakened! Attack power reduced.")
-            actual_dmg = p.take_damage(e_dmg)
-            log.append(f"💥 {enemy.name} unleashes a Heavy Strike! Deals {actual_dmg} critical damage (Armor absorbed {e_dmg - actual_dmg})!")
+            actual_dmg = target_entity.take_damage(e_dmg)
+            if is_summon:
+                log.append(f"💥 {enemy.name} unleashes a Heavy Strike on summon {target_name}! Deals {actual_dmg} critical damage!")
+            else:
+                log.append(f"💥 {enemy.name} unleashes a Heavy Strike! Deals {actual_dmg} critical damage (Armor absorbed {e_dmg - actual_dmg})!")
         elif intent == "HEAL":
             heal_amt = 35
             enemy.hp += heal_amt
@@ -391,20 +410,28 @@ def enemy_turn(p, enemy, log):
             if is_weakened:
                 e_dmg = int(e_dmg * 0.7)
                 log.append(f"🩸 {enemy.name} is Weakened! Attack power reduced.")
-            actual_dmg = p.take_damage(e_dmg)
-            log.append(f"⚡ {enemy.name} chants a Curse! Drains {drain_amt} of your Reiryoku and deals {actual_dmg} damage!")
+            actual_dmg = target_entity.take_damage(e_dmg)
+            if is_summon:
+                log.append(f"⚡ {enemy.name} chants a Curse on summon {target_name}! Drains {drain_amt} of player's Reiryoku and deals {actual_dmg} damage!")
+            else:
+                log.append(f"⚡ {enemy.name} chants a Curse! Drains {drain_amt} of your Reiryoku and deals {actual_dmg} damage!")
             
-            # Apply Weakened to player
+            # Apply Weakened to target
             if random.random() < 0.5:
-                if not any(eff.get("name") == "Weakened" for eff in p.status_effects):
-                    p.status_effects.append({"name": "Weakened", "turns": 2, "value": 30, "icon": "🩸"})
-                    log.append(f"🩸 {p.name} has been inflicted with Weakened status for 2 turns!")
+                if not any(eff.get("name") == "Weakened" for eff in target_entity.status_effects):
+                    target_entity.status_effects.append({"name": "Weakened", "turns": 2, "value": 30, "icon": "🩸"})
+                    log.append(f"🩸 {target_name} has been inflicted with Weakened status for 2 turns!")
         else:
             e_dmg = enemy.attack_power
             if is_weakened:
                 e_dmg = int(e_dmg * 0.7)
-            actual_dmg = p.take_damage(e_dmg)
-            log.append(f"{enemy.name} counter-attacks for {actual_dmg} damage.")
+            actual_dmg = target_entity.take_damage(e_dmg)
+            log.append(f"{enemy.name} counter-attacks {target_name} for {actual_dmg} damage.")
+
+        # Check if active summon was defeated
+        if state.active_summon and state.active_summon.hp <= 0:
+            log.append(f"💀 Summon {state.active_summon.name} has been defeated and returned to the spirit world!")
+            state.active_summon = None
     else:
         log.append(f"⏳ {enemy.name} skipped turn due to status effects.")
 
@@ -414,8 +441,71 @@ def enemy_turn(p, enemy, log):
         p.current_location = "Shibuya Station"
         p.hp = p.max_hp // 2
         state.current_enemies = []
+        state.active_summon = None
         
-    enemy.prepare_next_intent()
+    enemy.prepare_next_intent(has_summon=(state.active_summon is not None))
+
+def resolve_summon_turn(p, enemy, log):
+    if not state.active_summon:
+        return False
+        
+    summon = state.active_summon
+    
+    # Resolve summon status effects
+    summon_frozen = resolve_status_effects(summon, log)
+    
+    if summon.hp <= 0:
+        # Might die from status effects
+        log.append(f"💀 Summon {summon.name} has been defeated by status effects!")
+        state.active_summon = None
+        return False
+        
+    if not summon_frozen:
+        r = random.random()
+        if "Gojo" in summon.name:
+            if r < 0.50:
+                dmg = 45
+                enemy.take_damage(dmg)
+                log.append(f"🔴 Satoru Gojo fires a Cursed Technique Reversal: Red! Deals {dmg} damage to {enemy.name}!")
+            elif r < 0.80:
+                dmg = 60
+                enemy.take_damage(dmg)
+                log.append(f"⚡ Satoru Gojo lands a critical Black Flash! Deals {dmg} heavy damage to {enemy.name}!")
+            else:
+                heal_summon = 40
+                heal_player = 20
+                summon.hp += heal_summon
+                p.hp += heal_player
+                log.append(f"🔄 Satoru Gojo uses Reverse Cursed Technique! Heals himself for {heal_summon} HP and restores {heal_player} HP to {p.name}!")
+        elif "Shunsui" in summon.name:
+            if r < 0.60:
+                dmg = 35
+                enemy.take_damage(dmg)
+                log.append(f"⚔️ Shunsui Kyoraku executes a Takaoni shadow slash! Deals {dmg} damage to {enemy.name}!")
+            else:
+                dmg = 50
+                enemy.take_damage(dmg)
+                # Apply weakened
+                if not any(eff.get("name") == "Weakened" for eff in enemy.status_effects):
+                    enemy.status_effects.append({"name": "Weakened", "turns": 2, "value": 30, "icon": "🩸"})
+                log.append(f"🌸 Shunsui Kyoraku shadow plunge! Deals {dmg} damage and weakens {enemy.name}!")
+    else:
+        log.append(f"⏳ Summon {summon.name} is Frozen and skipped their turn.")
+        
+    # Decrement duration
+    summon.turns_left -= 1
+    
+    if enemy.hp <= 0:
+        handle_enemy_defeat(p, enemy, log)
+        return True
+        
+    if summon.turns_left <= 0:
+        log.append(f"✨ {summon.name}'s spiritual energy disperses, and they return to their seal.")
+        state.active_summon = None
+    else:
+        log.append(f"⏳ Summon {summon.name} has {summon.turns_left} turns remaining in battle.")
+        
+    return False
 
 def handle_enemy_defeat(p, enemy, log):
     log.append(f"Defeated {enemy.name}! Gained {enemy.xp_reward} XP and {enemy.gold_reward} Gold.")
@@ -490,11 +580,14 @@ def combat_attack():
     if enemy.hp <= 0:
         handle_enemy_defeat(p, enemy, log)
     else:
-        # Enemy counter attacks using dynamic behaviors
-        enemy_turn(p, enemy, log)
-        if enemy.hp <= 0:
-            # Handle death from Burned at start of enemy turn
-            handle_enemy_defeat(p, enemy, log)
+        # Resolve summon turn
+        enemy_killed = resolve_summon_turn(p, enemy, log)
+        if not enemy_killed:
+            # Enemy counter attacks using dynamic behaviors
+            enemy_turn(p, enemy, log)
+            if enemy.hp <= 0:
+                # Handle death from Burned at start of enemy turn
+                handle_enemy_defeat(p, enemy, log)
             
     state.combat_log = log + state.combat_log
     return {"message": "Attack executed", "state": get_state()}
@@ -595,10 +688,13 @@ def combat_kido(req: KidoRequest):
     if enemy.hp <= 0:
         handle_enemy_defeat(p, enemy, log)
     else:
-        # Enemy counter attacks using dynamic behaviors
-        enemy_turn(p, enemy, log)
-        if enemy.hp <= 0:
-            handle_enemy_defeat(p, enemy, log)
+        # Resolve summon turn
+        enemy_killed = resolve_summon_turn(p, enemy, log)
+        if not enemy_killed:
+            # Enemy counter attacks using dynamic behaviors
+            enemy_turn(p, enemy, log)
+            if enemy.hp <= 0:
+                handle_enemy_defeat(p, enemy, log)
             
     state.combat_log = log + state.combat_log
     return {"message": "Kido cast successfully", "state": get_state()}
@@ -636,6 +732,7 @@ def combat_summon(req: SummonRequest):
     if not player_frozen:
         p.energy -= cost
         if summon == "gojo":
+            state.active_summon = Summon("Satoru Gojo", 120, 45, 3)
             dmg = 100
             enemy.hp -= dmg
             log.append(f"{p.name} summoned Satoru Gojo! Domain Expansion: Infinite Void freezes the enemy, dealing {dmg} absolute damage!")
@@ -646,6 +743,7 @@ def combat_summon(req: SummonRequest):
             log.append(f"❄️ Infinite Void has frozen {enemy.name} solid for 2 turns!")
             
         elif summon == "shunsui":
+            state.active_summon = Summon("Shunsui Kyoraku", 100, 35, 3)
             dmg = 70
             enemy.hp -= dmg
             log.append(f"{p.name} summoned Shunsui Kyoraku! Kageoni strikes from the shadows, dealing {dmg} shadow damage!")
@@ -700,10 +798,13 @@ def combat_item(req: CombatItemRequest):
     else:
         log.append(f"⏳ {p.name} skipped turn due to status effects.")
         
-    # Enemy counter attacks because using an item took the player's turn
-    enemy_turn(p, enemy, log)
-    if enemy.hp <= 0:
-        handle_enemy_defeat(p, enemy, log)
+    # Resolve summon turn
+    enemy_killed = resolve_summon_turn(p, enemy, log)
+    if not enemy_killed:
+        # Enemy counter attacks because using an item took the player's turn
+        enemy_turn(p, enemy, log)
+        if enemy.hp <= 0:
+            handle_enemy_defeat(p, enemy, log)
         
     state.combat_log = log + state.combat_log
     return {"message": f"Used {req.item_name}", "state": get_state()}

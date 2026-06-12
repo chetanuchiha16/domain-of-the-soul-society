@@ -261,9 +261,10 @@ class Enemy(Entity):
         self.xp_reward = xp_reward
         self.gold_reward = gold_reward
         self.next_intent = "ATTACK"
+        self.target = "player"
         self.prepare_next_intent()
 
-    def prepare_next_intent(self):
+    def prepare_next_intent(self, has_summon=False):
         # Weighted selection of next action:
         # 60% attack, 20% heavy attack, 10% heal, 10% curse
         r = random.random()
@@ -276,9 +277,29 @@ class Enemy(Entity):
         else:
             self.next_intent = "CURSE"
 
+        if has_summon and self.next_intent in ["ATTACK", "HEAVY_ATTACK", "CURSE"]:
+            self.target = "summon" if random.random() < 0.5 else "player"
+        else:
+            self.target = "player"
+
     def get_stats_summary(self):
         return f"{self.name} - HP: {self.hp}/{self.max_hp} | ATK: {self.attack_power}"
 
+
+class Summon(Entity):
+    def __init__(self, name, hp, attack_power, turns_left):
+        super().__init__(name, hp, attack_power)
+        self.turns_left = turns_left
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "hp": self.hp,
+            "max_hp": self.max_hp,
+            "attack_power": self.attack_power,
+            "turns_left": self.turns_left,
+            "status_effects": self.status_effects
+        }
 
 class Location:
     def __init__(self, name, description, region, x, y, connections=None):
