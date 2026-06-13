@@ -269,7 +269,8 @@ def move_player(req: MoveRequest):
             ],
             "Cursed Site": [
                 {"name": "Sukuna Fragment Guard", "hp": 80, "atk": 14, "xp": 45, "gold": 20},
-                {"name": "Cursed Swarm", "hp": 50, "atk": 10, "xp": 30, "gold": 15}
+                {"name": "Cursed Swarm", "hp": 50, "atk": 10, "xp": 30, "gold": 15},
+                {"name": "Ryomen Sukuna", "hp": 400, "atk": 35, "xp": 500, "gold": 250}
             ],
             "Alleys": [
                 {"name": "Low-grade Curse", "hp": 35, "atk": 7, "xp": 20, "gold": 8}
@@ -299,7 +300,8 @@ def move_player(req: MoveRequest):
                 {"name": "Hollow Adjuchas", "hp": 200, "atk": 28, "xp": 150, "gold": 75}
             ],
             "Las Noches Throne Room": [
-                {"name": "Espada Replica", "hp": 250, "atk": 32, "xp": 200, "gold": 100}
+                {"name": "Espada Replica", "hp": 250, "atk": 32, "xp": 200, "gold": 100},
+                {"name": "Sosuke Aizen", "hp": 450, "atk": 40, "xp": 600, "gold": 350}
             ]
         }
         

@@ -142,7 +142,67 @@ const EnemyAvatar = ({ name }: { name: string }) => {
     );
   }
 
-  if (lowercaseName.includes("sukuna") || lowercaseName.includes("aizen") || lowercaseName.includes("replica")) {
+  if (lowercaseName.includes("sukuna")) {
+    return (
+      <svg viewBox="0 0 100 100" className="w-10 h-10">
+        <defs>
+          <radialGradient id="sukunaAura" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="48" fill="url(#sukunaAura)" />
+        {/* Tattoos on face */}
+        <path d="M40 25 L45 28 L35 32 Z" fill="#000000" />
+        <path d="M60 25 L55 28 L65 32 Z" fill="#000000" />
+        <line x1="50" y1="18" x2="50" y2="28" stroke="#000000" strokeWidth="2.5" />
+        <line x1="45" y1="23" x2="55" y2="23" stroke="#000000" strokeWidth="1.5" />
+        {/* 4 eyes */}
+        <polygon points="35,40 45,43 36,46" fill="#ef4444" stroke="#7f1d1d" strokeWidth="1" />
+        <polygon points="65,40 55,43 64,46" fill="#ef4444" stroke="#7f1d1d" strokeWidth="1" />
+        <polygon points="37,48 46,50 38,53" fill="#ef4444" stroke="#7f1d1d" strokeWidth="0.8" />
+        <polygon points="63,48 54,50 62,53" fill="#ef4444" stroke="#7f1d1d" strokeWidth="0.8" />
+        {/* Wicked mouth */}
+        <path d="M38 65 Q50 78 62 65 Q50 62 38 65" fill="#1e1b4b" stroke="#ef4444" strokeWidth="1.5" />
+        <path d="M44 67 L46 71 M56 67 L54 71" stroke="#ffffff" strokeWidth="1" />
+      </svg>
+    );
+  }
+
+  if (lowercaseName.includes("aizen")) {
+    return (
+      <svg viewBox="0 0 100 100" className="w-10 h-10">
+        <defs>
+          <radialGradient id="hogyokuGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#38bdf8" />
+            <stop offset="50%" stopColor="#c084fc" />
+            <stop offset="100%" stopColor="#0f172a" />
+          </radialGradient>
+        </defs>
+        {/* Hōgyoku sphere at center-bottom */}
+        <circle cx="50" cy="70" r="18" fill="url(#hogyokuGlow)" className="animate-pulse" />
+        <circle cx="50" cy="70" r="6" fill="#ffffff" />
+        
+        {/* Hair and Face contour */}
+        <path d="M30 35 C30 15 70 15 70 35 C70 50 65 60 50 62 C35 60 30 50 30 35 Z" fill="#1e293b" stroke="#64748b" strokeWidth="1" />
+        {/* Hypnotic single front strand */}
+        <path d="M50 20 Q46 38 52 48" fill="none" stroke="#0f172a" strokeWidth="3.5" />
+        <path d="M50 20 Q46 38 52 48" fill="none" stroke="#64748b" strokeWidth="1.5" />
+        
+        {/* Glowing eyes */}
+        <circle cx="43" cy="40" r="2" fill="#c084fc" className="animate-ping" />
+        <circle cx="43" cy="40" r="1.5" fill="#e9d5ff" />
+        <circle cx="57" cy="40" r="2" fill="#c084fc" className="animate-ping" />
+        <circle cx="57" cy="40" r="1.5" fill="#e9d5ff" />
+        
+        {/* Shattered Mirror overlay shards */}
+        <line x1="20" y1="20" x2="80" y2="80" stroke="#38bdf8" strokeWidth="0.8" strokeDasharray="6 3" opacity="0.6" />
+        <line x1="80" y1="15" x2="15" y2="75" stroke="#a855f7" strokeWidth="0.8" opacity="0.6" />
+      </svg>
+    );
+  }
+
+  if (lowercaseName.includes("replica") || lowercaseName.includes("sentinel")) {
     return (
       <svg viewBox="0 0 100 100" className="w-10 h-10">
         <polygon points="50,12 85,85 15,85" fill="#581c87" opacity="0.4" stroke="#a855f7" strokeWidth="1" />
@@ -619,6 +679,10 @@ function App() {
   
   const isPlayerTargeted = !!(activeEnemy && (activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' && (activeEnemy as any).target !== 'summon')
   const isSummonTargeted = !!(activeEnemy && (activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' && (activeEnemy as any).target === 'summon')
+  
+  const isSukuna = !!(activeEnemy && activeEnemy.name.toLowerCase().includes("sukuna"))
+  const isAizen = !!(activeEnemy && activeEnemy.name.toLowerCase().includes("aizen"))
+  const isBoss = isSukuna || isAizen
 
   useEffect(() => {
     if (!inCombat) {
@@ -1010,16 +1074,56 @@ function App() {
                   </div>
                 </div>
               ) : inCombat && activeEnemy ? (
-                <div className="relative w-full h-[220px] bg-[#0c0505] border border-red-500/30 rounded-lg overflow-hidden mb-4 shadow-[0_0_20px_rgba(239,68,68,0.15)] flex flex-col justify-between p-4">
+                <div className={`relative w-full h-[220px] rounded-lg overflow-hidden mb-4 flex flex-col justify-between p-4 transition-all duration-500 ${
+                  isSukuna 
+                    ? 'bg-[#150303] border-2 border-red-600 shadow-[0_0_35px_rgba(220,38,38,0.4)]' 
+                    : isAizen 
+                      ? 'bg-[#06030c] border-2 border-purple-600 shadow-[0_0_35px_rgba(168,85,247,0.4)]' 
+                      : 'bg-[#0c0505] border border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
+                }`}>
                   {/* Grid / Sparks Background */}
-                  <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.02)_1px,transparent_1px)] bg-[size:15px_15px] pointer-events-none"></div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-red-950/20 via-transparent to-transparent pointer-events-none"></div>
+                  {isSukuna ? (
+                    <>
+                      <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.04)_1px,transparent_1px)] bg-[size:12px_12px] pointer-events-none"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-red-950/40 via-red-950/10 to-transparent pointer-events-none"></div>
+                      {/* Cursed slash lines */}
+                      <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
+                        <div className="absolute top-1/4 left-0 w-full h-0.5 bg-red-500 transform -rotate-12 animate-pulse"></div>
+                        <div className="absolute top-2/3 left-0 w-full h-0.5 bg-red-500 transform rotate-6 animate-pulse [animation-delay:1s]"></div>
+                      </div>
+                    </>
+                  ) : isAizen ? (
+                    <>
+                      <div className="absolute inset-0 bg-[linear-gradient(rgba(168,85,247,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.04)_1px,transparent_1px)] bg-[size:18px_18px] pointer-events-none"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-purple-950/30 via-purple-950/5 to-transparent pointer-events-none"></div>
+                      {/* Shattered glass particles / Kyoka Suigetsu shards */}
+                      <div className="absolute inset-0 opacity-15 pointer-events-none overflow-hidden">
+                        <div className="absolute top-1/3 left-1/4 w-12 h-12 bg-gradient-to-tr from-sky-400/20 to-purple-500/25 transform rotate-45 animate-pulse"></div>
+                        <div className="absolute top-1/2 right-1/4 w-16 h-8 bg-gradient-to-tr from-purple-400/25 to-pink-500/20 transform -rotate-12 animate-pulse [animation-delay:1.5s]"></div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="absolute inset-0 bg-[linear-gradient(rgba(239,68,68,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(239,68,68,0.02)_1px,transparent_1px)] bg-[size:15px_15px] pointer-events-none"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-red-950/20 via-transparent to-transparent pointer-events-none"></div>
+                    </>
+                  )}
                   
                   {/* Top Battle Metadata */}
                   <div className="relative z-10 flex justify-between items-center text-left">
-                    <span className="text-[9px] uppercase font-black tracking-widest text-red-500 [text-shadow:0_0_8px_rgba(239,68,68,0.6)] animate-pulse">
-                      ⚡ ACTIVE COMBAT Arena
-                    </span>
+                    {isSukuna ? (
+                      <span className="text-[10px] uppercase font-black tracking-widest text-red-500 [text-shadow:0_0_12px_rgba(239,68,68,0.9)] animate-pulse flex items-center gap-1.5">
+                        <span className="animate-spin [animation-duration:3s]">💀</span> THREAT LEVEL: APOCALYPTIC - RYOMEN SUKUNA
+                      </span>
+                    ) : isAizen ? (
+                      <span className="text-[10px] uppercase font-black tracking-widest text-purple-400 [text-shadow:0_0_12px_rgba(168,85,247,0.9)] animate-pulse flex items-center gap-1.5">
+                        <span className="animate-bounce">🔮</span> THREAT LEVEL: TRANSCENDENT - SŌSUKE AIZEN
+                      </span>
+                    ) : (
+                      <span className="text-[9px] uppercase font-black tracking-widest text-red-500 [text-shadow:0_0_8px_rgba(239,68,68,0.6)] animate-pulse">
+                        ⚡ ACTIVE COMBAT Arena
+                      </span>
+                    )}
                     <div className="flex gap-2">
                       <span className="text-[9px] font-bold text-gray-500 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded">
                         XP +{activeEnemy.xp_reward}
@@ -1181,14 +1285,18 @@ function App() {
 
                     {/* Enemy Slot (Right) */}
                     <div className="flex flex-col items-center w-[38%]" style={{ width: activeSummon ? '30%' : '38%' }}>
-                      <div className={`w-14 h-14 bg-gradient-to-br from-red-950 to-red-900 rounded-full p-0.5 border flex items-center justify-center relative transition-all duration-300 ${
+                      <div className={`w-14 h-14 bg-gradient-to-br rounded-full p-0.5 border flex items-center justify-center relative transition-all duration-500 ${
                         (activeEnemy as any).status_effects?.some((eff: any) => eff.name === 'Shielded')
                           ? 'border-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.6)]'
                           : (activeEnemy as any).status_effects?.some((eff: any) => eff.name === 'Frozen')
                             ? 'border-sky-400 shadow-[0_0_15px_rgba(56,189,248,0.6)]'
                             : (activeEnemy as any).status_effects?.some((eff: any) => eff.name === 'Burned')
                               ? 'border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.6)] animate-pulse'
-                              : 'border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.3)]'
+                              : isSukuna
+                                ? 'from-red-950 to-red-900 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.7)] animate-pulse'
+                                : isAizen
+                                  ? 'from-purple-950 to-purple-900 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.7)]'
+                                  : 'from-red-950 to-red-900 border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.3)]'
                       }`}>
                         <EnemyAvatar name={activeEnemy.name} />
 
@@ -1198,7 +1306,17 @@ function App() {
                         )}
                       </div>
                       <span className="text-[11px] font-bold text-white mt-1.5 truncate max-w-full">{activeEnemy.name}</span>
-                      <span className="text-[8px] uppercase tracking-wider text-red-400">HOSTILE</span>
+                      {isSukuna ? (
+                        <span className="text-[7px] uppercase font-black tracking-widest text-red-500 animate-pulse">
+                          👹 THE KING OF CURSES
+                        </span>
+                      ) : isAizen ? (
+                        <span className="text-[7px] uppercase font-black tracking-widest text-purple-400">
+                          🔮 THE MASTERMIND
+                        </span>
+                      ) : (
+                        <span className="text-[8px] uppercase tracking-wider text-red-400">HOSTILE</span>
+                      )}
 
                       {/* Status Effects List */}
                       {(activeEnemy as any).status_effects && (activeEnemy as any).status_effects.length > 0 && (
@@ -1236,10 +1354,10 @@ function App() {
                                 ? 'bg-purple-950/40 border-purple-500 text-purple-400 shadow-[0_0_6px_rgba(168,85,247,0.3)]'
                                 : 'bg-white/5 border-white/10 text-gray-400'
                         }`}>
-                          {(activeEnemy as any).next_intent === 'HEAVY_ATTACK' && '💥 HEAVY'}
+                          {(activeEnemy as any).next_intent === 'HEAVY_ATTACK' && (isSukuna ? '💥 CLEAVE & DISMANTLE' : isAizen ? '🔮 HADŌ #90: KUROHITSUGI' : '💥 HEAVY')}
                           {(activeEnemy as any).next_intent === 'HEAL' && '💚 RESTORE'}
-                          {(activeEnemy as any).next_intent === 'CURSE' && '⚡ CURSE'}
-                          {(activeEnemy as any).next_intent === 'ATTACK' && '⚔️ SLASH'}
+                          {(activeEnemy as any).next_intent === 'CURSE' && (isSukuna ? '🔥 MALEVOLENT SHRINE' : isAizen ? '✨ ILLUSION' : '⚡ CURSE')}
+                          {(activeEnemy as any).next_intent === 'ATTACK' && (isSukuna ? '⚔️ DISMANTLE' : isAizen ? '⚔️ KYŌKA SUIGETSU' : '⚔️ SLASH')}
                         </div>
                       )}
                     </div>
