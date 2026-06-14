@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { DialogueBox, DialogueLine } from './DialogueBox'
+import { FrameAnimationPlayer } from './FrameAnimationPlayer'
 
 const API_BASE = 'http://localhost:8000/api'
 
@@ -234,6 +235,7 @@ function App() {
   const [shopOpen, setShopOpen] = useState(false)
   const [shopItems, setShopItems] = useState<ItemInfo[]>([])
   const [combatMenu, setCombatMenu] = useState<'main' | 'kido' | 'items' | 'summons'>('main')
+  const [activeAnimation, setActiveAnimation] = useState<string | null>(null)
 
   const triggerLocationDialogue = (dest: string, enemyName?: string) => {
     const desc = mapData[dest]?.description || `You have traveled to ${dest}.`;
@@ -525,7 +527,10 @@ function App() {
     handleAction('player/move', { destination: dest })
   }
 
-  const attackEnemy = () => handleAction('combat/attack')
+  const attackEnemy = () => {
+    setActiveAnimation('slash')
+    handleAction('combat/attack')
+  }
   const runAway = () => handleAction('combat/run')
 
   const claimVictoryRewards = async () => {
@@ -548,6 +553,9 @@ function App() {
 
   const castKido = async (spellName: string) => {
     try {
+      if (spellName.toLowerCase().includes("shakkaho")) {
+        setActiveAnimation('blast')
+      }
       const res = await fetch(`${API_BASE}/combat/kido`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -577,6 +585,11 @@ function App() {
 
   const executeSummon = async (summonName: string) => {
     try {
+      if (summonName.toLowerCase().includes("gojo")) {
+        setActiveAnimation('hollow_purple')
+      } else if (summonName.toLowerCase().includes("shunsui")) {
+        setActiveAnimation('karamatsu_shinju')
+      }
       const res = await fetch(`${API_BASE}/combat/summon`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1081,6 +1094,7 @@ function App() {
                       ? 'bg-[#06030c] border-2 border-purple-600 shadow-[0_0_35px_rgba(168,85,247,0.4)]' 
                       : 'bg-[#0c0505] border border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
                 }`}>
+                  <FrameAnimationPlayer animationType={activeAnimation} onComplete={() => setActiveAnimation(null)} />
                   {/* Grid / Sparks Background */}
                   {isSukuna ? (
                     <>
