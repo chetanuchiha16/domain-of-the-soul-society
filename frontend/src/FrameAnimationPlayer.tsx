@@ -163,41 +163,83 @@ export const FrameAnimationPlayer: React.FC<FrameAnimationPlayerProps> = ({ anim
     ],
     hollow_purple: [
       {
-        duration: 800,
-        className: 'bg-black/95 flex flex-col items-center justify-center border-t-2 border-b-2 border-sky-500/30',
+        duration: 650,
+        className: 'bg-black/95 flex items-center justify-between px-8 border-t-2 border-b-2 border-cyan-500/20',
         content: (
-          <div className="flex flex-col items-center justify-center gap-4">
-            <span className="text-cyan-400 font-mono text-[9px] uppercase tracking-widest animate-pulse">
-              🟦 LAPSE: BLUE
-            </span>
-            <span className="text-red-500 font-mono text-[9px] uppercase tracking-widest animate-pulse [animation-delay:0.3s]">
-              🟥 REVERSION: RED
-            </span>
-            <span className="text-[10px] text-gray-400 tracking-widest mt-2 uppercase">COMBINING SINGULARITIES...</span>
+          <div className="relative w-full h-full flex items-center justify-between">
+            <div className="flex flex-col items-start gap-1">
+              <span className="text-[7px] text-gray-500 font-mono tracking-widest">⚠️ LIMITLESS INVERSION</span>
+              <span className="text-cyan-400 font-black text-[12px] uppercase tracking-widest [text-shadow:0_0_8px_rgba(34,211,238,0.7)] animate-pulse">
+                🟦 LAPSE: BLUE
+              </span>
+            </div>
+            {/* Spinning blue vortex */}
+            <div className="w-10 h-10 rounded-full border-2 border-dashed border-cyan-400 animate-spin flex items-center justify-center [animation-duration:1s]">
+              <div className="w-6 h-6 rounded-full bg-cyan-900/60 border border-cyan-300"></div>
+            </div>
           </div>
         ),
         onEnter: () => playAnimSound('purple_charge')
       },
       {
-        duration: 850,
+        duration: 650,
+        className: 'bg-black/95 flex items-center justify-between px-8 border-t-2 border-b-2 border-red-500/20',
+        content: (
+          <div className="relative w-full h-full flex items-center justify-between">
+            {/* Spinning red vortex */}
+            <div className="w-10 h-10 rounded-full border-2 border-dashed border-red-500 animate-spin flex items-center justify-center [animation-duration:1.5s]">
+              <div className="w-6 h-6 rounded-full bg-red-950/60 border border-red-400"></div>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-[7px] text-gray-500 font-mono tracking-widest">⚠️ REVERSE CURSED TECHNIQUE</span>
+              <span className="text-red-500 font-black text-[12px] uppercase tracking-widest [text-shadow:0_0_8px_rgba(239,68,68,0.7)] animate-pulse">
+                🟥 REVERSION: RED
+              </span>
+            </div>
+          </div>
+        ),
+        onEnter: () => playAnimSound('purple_charge')
+      },
+      {
+        duration: 450,
         className: 'bg-white text-black flex items-center justify-center transition-all duration-300',
         content: (
-          <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-            {/* Speed lines */}
-            <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_2px,#e2e8f0_2px,#e2e8f0_4px)] opacity-30"></div>
-            <span className="text-2xl font-extrabold uppercase italic tracking-widest text-black z-10 [text-shadow:2px_2px_0_#94a3b8]">
-              BANKAI expansion? NO...
+          <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden">
+            {/* Manga Sketch style background */}
+            <div className="absolute inset-0 bg-[repeating-linear-gradient(45deg,#000,#000_1px,#fff_1px,#fff_4px)] opacity-20"></div>
+            <div className="absolute w-[120%] h-[120%] border-[2px] border-black/35 rotate-12 scale-95 animate-pulse"></div>
+            <span className="text-xl font-extrabold uppercase italic tracking-widest text-black z-10 [text-shadow:1px_1px_0_rgba(0,0,0,0.2)] animate-pulse">
+              ⚠️ COLLIDING SINGULARITIES
+            </span>
+            <span className="text-[8px] font-black uppercase text-gray-700 tracking-widest z-10 mt-1">
+              "Nine Ropes. Polarized Light. Crow and Declaration."
             </span>
           </div>
         )
       },
       {
-        duration: 1200,
-        className: 'bg-purple-950/90 border-2 border-purple-500 shadow-[inset_0_0_100px_rgba(168,85,247,0.8)] flex flex-col items-center justify-center',
+        duration: 1000,
+        className: 'bg-[#05020a] border-2 border-purple-600 shadow-[inset_0_0_120px_rgba(168,85,247,0.9)] flex flex-col items-center justify-center overflow-hidden',
         content: (
-          <div className="flex flex-col items-center justify-center gap-3">
-            <div className="w-24 h-24 rounded-full bg-purple-500 shadow-[0_0_50px_rgba(168,85,247,1)] border border-purple-300 animate-ping opacity-60"></div>
-            <span className="text-xl font-black uppercase text-purple-400 tracking-widest [text-shadow:0_0_15px_rgba(168,85,247,0.8)]">
+          <div className="relative w-full h-full flex flex-col items-center justify-center gap-2">
+            {/* Expanding purple black hole with electricity/lightning */}
+            <svg viewBox="0 0 100 100" className="absolute w-24 h-24 animate-pulse">
+              <defs>
+                <radialGradient id="purpleCore" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="25%" stopColor="#d8b4fe" />
+                  <stop offset="60%" stopColor="#a855f7" />
+                  <stop offset="95%" stopColor="#581c87" />
+                  <stop offset="100%" stopColor="transparent" />
+                </radialGradient>
+              </defs>
+              <circle cx="50" cy="50" r="42" fill="url(#purpleCore)" className="animate-ping" style={{ animationDuration: '2.5s' }} />
+              <circle cx="50" cy="50" r="28" fill="url(#purpleCore)" />
+              {/* Lightning vectors */}
+              <path d="M50 20 L48 40 L54 42 L50 80" stroke="#f3e8ff" strokeWidth="1" fill="none" opacity="0.8" />
+              <path d="M25 50 L45 48 L48 54 L75 50" stroke="#f3e8ff" strokeWidth="1" fill="none" opacity="0.8" />
+            </svg>
+            <span className="text-lg font-black uppercase text-purple-300 tracking-widest [text-shadow:0_0_12px_rgba(168,85,247,0.95)] z-10 animate-bounce mt-24">
               🟣 HOLLOW PURPLE
             </span>
           </div>
@@ -205,12 +247,49 @@ export const FrameAnimationPlayer: React.FC<FrameAnimationPlayerProps> = ({ anim
         onEnter: () => playAnimSound('purple_release')
       },
       {
-        duration: 400,
-        className: 'bg-white flex items-center justify-center',
+        duration: 160,
+        className: 'bg-black text-white flex items-center justify-center',
         content: (
-          <span className="text-[12px] font-bold text-black uppercase tracking-widest">
-            ERADICATING THE THREAT...
-          </span>
+          <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+            {/* High-Contrast Impact Frame (Inverted Gojo eye zoom) */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,#fff_45%,#fff_55%,transparent_55%)] opacity-85"></div>
+            <svg viewBox="0 0 100 100" className="absolute w-full h-full opacity-90">
+              <path d="M10 50 Q50 25 90 50 Q50 75 10 50 Z" fill="none" stroke="#ffffff" strokeWidth="4" />
+              <circle cx="50" cy="50" r="16" fill="#ffffff" />
+              <circle cx="50" cy="50" r="8" fill="#000000" />
+            </svg>
+            <span className="text-3xl font-black italic tracking-tighter text-white z-10 scale-125 [text-shadow:3px_3px_0_#000]">
+              IMPACT
+            </span>
+          </div>
+        ),
+        onEnter: () => playAnimSound('slash')
+      },
+      {
+        duration: 160,
+        className: 'bg-white text-black flex items-center justify-center',
+        content: (
+          <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
+            {/* Inverted secondary impact frame */}
+            <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,#fff,#fff_2px,#000_2px,#000_4px)] opacity-35"></div>
+            <span className="text-3xl font-black italic tracking-tighter text-black z-10 scale-110 [text-shadow:2px_2px_0_#fff]">
+              CRITICAL BURST
+            </span>
+          </div>
+        ),
+        onEnter: () => playAnimSound('slash')
+      },
+      {
+        duration: 350,
+        className: 'bg-neutral-900/40 flex items-center justify-center',
+        content: (
+          <div className="flex flex-col items-center justify-center">
+            {/* Dissolving smoke/dust block */}
+            <div className="w-16 h-8 bg-white/20 rounded-full blur-md animate-pulse"></div>
+            <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mt-1">
+              🌫️ ERADICATING THE AREA...
+            </span>
+          </div>
         )
       }
     ],
