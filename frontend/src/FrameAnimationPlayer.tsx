@@ -109,6 +109,38 @@ const playAnimSound = (type: string) => {
 
       osc.start();
       osc.stop(animAudioCtx.currentTime + 1.0);
+    } else if (type === 'thread_tension') {
+      // High pitch wood block / string creak
+      const osc = animAudioCtx.createOscillator();
+      const gain = animAudioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(dest);
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(350, animAudioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(800, animAudioCtx.currentTime + 0.35);
+
+      gain.gain.setValueAtTime(0.015, animAudioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, animAudioCtx.currentTime + 0.35);
+
+      osc.start();
+      osc.stop(animAudioCtx.currentTime + 0.35);
+    } else if (type === 'water_gurgle') {
+      // Low underwater resonance
+      const osc = animAudioCtx.createOscillator();
+      const gain = animAudioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(dest);
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(65, animAudioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(50, animAudioCtx.currentTime + 0.9);
+
+      gain.gain.setValueAtTime(0.07, animAudioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, animAudioCtx.currentTime + 0.9);
+
+      osc.start();
+      osc.stop(animAudioCtx.currentTime + 0.9);
     }
   } catch (err) {
     console.error("Failed to synthesize animation sound:", err);
@@ -295,45 +327,116 @@ export const FrameAnimationPlayer: React.FC<FrameAnimationPlayerProps> = ({ anim
     ],
     karamatsu_shinju: [
       {
-        duration: 1000,
-        className: 'bg-black/95 flex flex-col items-center justify-center',
+        duration: 850,
+        className: 'bg-black/95 flex flex-col items-center justify-center border-t-2 border-b-2 border-rose-950',
         content: (
-          <div className="flex flex-col items-center justify-center gap-2">
-            <span className="text-rose-500 font-mono text-[12px] uppercase tracking-widest animate-pulse">
+          <div className="flex flex-col items-center justify-center gap-2 relative w-full h-full overflow-hidden">
+            {/* Cherry Blossom SVG particles */}
+            <div className="absolute inset-0 opacity-20 pointer-events-none">
+              <svg viewBox="0 0 100 100" className="w-full h-full">
+                <path d="M20 30 Q25 20 30 30 Q25 40 20 30 Z" fill="#f43f5e" className="animate-spin" style={{ animationDuration: '4s' }} />
+                <path d="M70 60 Q75 50 80 60 Q75 70 70 60 Z" fill="#f43f5e" className="animate-spin" style={{ animationDuration: '6s' }} />
+              </svg>
+            </div>
+            <span className="text-rose-500 font-mono text-[13px] uppercase tracking-widest font-black [text-shadow:0_0_10px_rgba(244,63,94,0.7)] animate-pulse">
               🌸 BANKAI
             </span>
-            <span className="text-gray-400 font-mono text-[9px] uppercase tracking-widest">
-              Karamatsu Shinju
+            <span className="text-gray-400 font-mono text-[8px] uppercase tracking-widest">
+              Katen Kyōkotsu: Karamatsu Shinjū
             </span>
           </div>
         ),
         onEnter: () => playAnimSound('bankai_start')
       },
       {
-        duration: 1000,
-        className: 'bg-indigo-950/90 border-2 border-indigo-950 shadow-[inset_0_0_60px_rgba(49,46,129,0.9)] flex items-center justify-center',
+        duration: 850,
+        className: 'bg-[#0f0a12]/95 border-2 border-indigo-950 shadow-[inset_0_0_80px_rgba(49,46,129,0.75)] flex items-center justify-center',
         content: (
-          <div className="relative w-full h-full flex items-center justify-center">
-            {/* Thread overlay */}
-            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(45deg,#312e81_1px,transparent_1px),linear-gradient(-45deg,#312e81_1px,transparent_1px)] bg-[size:10px_10px]"></div>
-            <span className="text-[11px] font-black uppercase tracking-wider text-indigo-300 animate-bounce">
+          <div className="relative w-full h-full flex flex-col items-center justify-center gap-1.5 overflow-hidden">
+            {/* Fine Thread Crossings */}
+            <div className="absolute inset-0 opacity-40">
+              <svg viewBox="0 0 100 100" className="w-full h-full">
+                <line x1="0" y1="10" x2="100" y2="90" stroke="#818cf8" strokeWidth="0.5" />
+                <line x1="0" y1="80" x2="100" y2="20" stroke="#818cf8" strokeWidth="0.5" />
+                <line x1="30" y1="0" x2="70" y2="100" stroke="#818cf8" strokeWidth="0.5" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-300 z-10 [text-shadow:0_0_8px_rgba(129,140,248,0.7)]">
               ACT I: The Sharing of Pain
             </span>
+            <span className="text-[7px] text-gray-500 max-w-[85%] text-center italic font-mono z-10">
+              "Wounds inflicted on your body will appear on mine."
+            </span>
           </div>
-        )
+        ),
+        onEnter: () => playAnimSound('thread_tension')
+      },
+      {
+        duration: 850,
+        className: 'bg-black/95 flex items-center justify-center border-t-2 border-b-2 border-red-950',
+        content: (
+          <div className="relative w-full h-full flex flex-col items-center justify-center gap-1.5 overflow-hidden">
+            {/* Bubbling spots */}
+            <div className="absolute inset-0 opacity-30">
+              <svg viewBox="0 0 100 100" className="w-full h-full">
+                <circle cx="20" cy="30" r="4" fill="#ef4444" className="animate-ping" />
+                <circle cx="80" cy="40" r="5" fill="#ef4444" className="animate-ping" style={{ animationDelay: '0.2s' }} />
+                <circle cx="45" cy="75" r="3" fill="#ef4444" className="animate-ping" style={{ animationDelay: '0.4s' }} />
+              </svg>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-red-500 z-10 [text-shadow:0_0_8px_rgba(239,68,68,0.7)]">
+              ACT II: The Pillow of Shame
+            </span>
+            <span className="text-[7px] text-gray-500 max-w-[85%] text-center italic font-mono z-10">
+              "A cruel disease path, causing you to bleed profusely."
+            </span>
+          </div>
+        ),
+        onEnter: () => playAnimSound('blast')
       },
       {
         duration: 1200,
-        className: 'bg-slate-950/95 flex flex-col items-center justify-center',
+        className: 'bg-sky-950/90 border-2 border-sky-800 shadow-[inset_0_0_100px_rgba(14,165,233,0.85)] flex flex-col items-center justify-center',
         content: (
-          <div className="flex flex-col items-center justify-center gap-2">
-            <span className="text-sky-400 font-mono text-[10px] uppercase tracking-widest animate-pulse">
+          <div className="flex flex-col items-center justify-center gap-2 relative w-full h-full overflow-hidden">
+            {/* Undulating water ripples */}
+            <div className="absolute inset-0 opacity-25">
+              <svg viewBox="0 0 100 100" className="w-full h-full">
+                <ellipse cx="50" cy="50" rx="35" ry="10" fill="none" stroke="#38bdf8" strokeWidth="1" className="animate-pulse" />
+                <ellipse cx="50" cy="50" rx="45" ry="15" fill="none" stroke="#38bdf8" strokeWidth="0.5" className="animate-pulse" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-sky-300 z-10 [text-shadow:0_0_10px_rgba(56,189,248,0.8)]">
               ACT III: The Abyss of Water
             </span>
-            <span className="text-gray-500 text-[8px] max-w-[80%] text-center italic">
-              "Those who drown here shall know only cold despair."
+            <span className="text-[7px] text-sky-400 max-w-[85%] text-center italic font-mono z-10">
+              "We drown together until one's spiritual pressure expires."
             </span>
           </div>
+        ),
+        onEnter: () => playAnimSound('water_gurgle')
+      },
+      {
+        duration: 900,
+        className: 'bg-black text-white flex items-center justify-center transition-all duration-300',
+        content: (
+          <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden">
+            {/* White cutting thread flashing and then blood red flash */}
+            <div className="absolute w-full h-0.5 bg-white shadow-[0_0_15px_#ffffff] scale-y-150 animate-pulse"></div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-rose-500 z-10 [text-shadow:0_0_10px_rgba(244,63,94,0.8)] mt-6 animate-ping">
+              ACT IV: Thread-Cut Throat-Bleed
+            </span>
+          </div>
+        ),
+        onEnter: () => playAnimSound('slash')
+      },
+      {
+        duration: 400,
+        className: 'bg-neutral-900/60 flex items-center justify-center',
+        content: (
+          <span className="text-[8px] font-mono uppercase tracking-widest text-rose-400/80 animate-pulse">
+            🌸 Cherry blossoms dissolve...
+          </span>
         )
       }
     ]
