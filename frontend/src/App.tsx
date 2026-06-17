@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { DialogueBox, DialogueLine } from './DialogueBox'
 import { FrameAnimationPlayer } from './FrameAnimationPlayer'
 
@@ -236,6 +236,9 @@ function App() {
   const [shopItems, setShopItems] = useState<ItemInfo[]>([])
   const [combatMenu, setCombatMenu] = useState<'main' | 'kido' | 'items' | 'summons'>('main')
   const [activeAnimation, setActiveAnimation] = useState<string | null>(null)
+  const [combatShake, setCombatShake] = useState(false)
+  const [chromaticEffect, setChromaticEffect] = useState(false)
+  const [invertFlash, setInvertFlash] = useState(false)
 
   const triggerLocationDialogue = (dest: string, enemyName?: string) => {
     const desc = mapData[dest]?.description || `You have traveled to ${dest}.`;
@@ -703,6 +706,54 @@ function App() {
     }
   }, [inCombat])
 
+  // Track previous HP to trigger screen shake and critical flashes
+  const prevPlayerHpRef = useRef<number>(0)
+  const prevEnemyHpRef = useRef<number>(0)
+  const prevCombatActiveRef = useRef<boolean>(false)
+
+  useEffect(() => {
+    if (!gameState) return
+
+    const inCombatActive = !!(gameState.combat && gameState.combat.active && gameState.combat.enemies && gameState.combat.enemies.length > 0)
+    const currentHp = gameState.player?.hp || 0
+    const maxHp = gameState.player?.max_hp || 100
+    const currentEnemyHp = inCombatActive ? gameState.combat.enemies[0].hp : 0
+
+    if (inCombatActive) {
+      const hpChanged = (currentHp !== prevPlayerHpRef.current && prevPlayerHpRef.current !== 0) ||
+                        (currentEnemyHp !== prevEnemyHpRef.current && prevEnemyHpRef.current !== 0)
+
+      if (hpChanged) {
+        setCombatShake(true)
+        setTimeout(() => setCombatShake(false), 400)
+
+        // Parse log for critical hit or heavy strike
+        const logs = gameState.combat.log || []
+        const latestLog = logs[0] || ''
+        const secondLatestLog = logs[1] || ''
+        const combined = (latestLog + ' ' + secondLatestLog).toLowerCase()
+
+        if (combined.includes('critical') || combined.includes('black flash') || combined.includes('heavy strike') || combined.includes('cleave') || combined.includes('dismantle')) {
+          setInvertFlash(true)
+          setTimeout(() => setInvertFlash(false), 350)
+        }
+      }
+
+      // Chromatic effect under 30% player health
+      if (currentHp > 0 && currentHp / maxHp < 0.3) {
+        setChromaticEffect(true)
+      } else {
+        setChromaticEffect(false)
+      }
+    } else {
+      setChromaticEffect(false)
+    }
+
+    prevPlayerHpRef.current = currentHp
+    prevEnemyHpRef.current = currentEnemyHp
+    prevCombatActiveRef.current = inCombatActive
+  }, [gameState])
+
   // Region theme detectors
   const currentRegion = currentLocDetails?.region || "Shibuya"
   const isShibuya = currentRegion.toLowerCase() === 'shibuya'
@@ -1093,8 +1144,11 @@ function App() {
                     : isAizen 
                       ? 'bg-[#06030c] border-2 border-purple-600 shadow-[0_0_35px_rgba(168,85,247,0.4)]' 
                       : 'bg-[#0c0505] border border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
-                }`}>
+                } ${combatShake ? 'animate-violent-shake' : ''} ${chromaticEffect ? 'animate-chromatic' : ''} ${invertFlash ? 'animate-invert-flash' : ''}`}>
                   <FrameAnimationPlayer animationType={activeAnimation} onComplete={() => setActiveAnimation(null)} />
+                  {invertFlash && (
+                    <div className="absolute inset-0 bg-white pointer-events-none z-50 mix-blend-difference"></div>
+                  )}
                   {/* Grid / Sparks Background */}
                   {isSukuna ? (
                     <>
