@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { DialogueBox, DialogueLine } from './DialogueBox'
 import { FrameAnimationPlayer } from './FrameAnimationPlayer'
+import { SoundManager } from './SoundManager'
 
 const API_BASE = 'http://localhost:8000/api'
 
@@ -706,10 +707,11 @@ function App() {
     }
   }, [inCombat])
 
-  // Track previous HP to trigger screen shake and critical flashes
+  // Track previous HP and rewards to trigger screen shake, critical flashes, and sound effects
   const prevPlayerHpRef = useRef<number>(0)
   const prevEnemyHpRef = useRef<number>(0)
   const prevCombatActiveRef = useRef<boolean>(false)
+  const prevVictoryRewardsRef = useRef<any>(null)
 
   useEffect(() => {
     if (!gameState) return
@@ -718,7 +720,32 @@ function App() {
     const currentHp = gameState.player?.hp || 0
     const maxHp = gameState.player?.max_hp || 100
     const currentEnemyHp = inCombatActive ? gameState.combat.enemies[0].hp : 0
+    const currentVictoryRewards = gameState.victory_rewards
 
+    // 1. Procedural BGM synchronization
+    if (inCombatActive) {
+      const activeEnemyName = gameState.combat.enemies[0]?.name || ''
+      const isBossFight = activeEnemyName.toLowerCase().includes('sukuna') || activeEnemyName.toLowerCase().includes('aizen')
+      if (isBossFight) {
+        SoundManager.startBGM('boss')
+      } else {
+        SoundManager.startBGM('combat')
+      }
+    } else {
+      SoundManager.startBGM('map')
+    }
+
+    // 2. Victory and level up sound effects
+    if (currentVictoryRewards && !prevVictoryRewardsRef.current) {
+      SoundManager.playUI('victory')
+      if (currentVictoryRewards.player_level_up) {
+        setTimeout(() => {
+          SoundManager.playUI('levelUp')
+        }, 600)
+      }
+    }
+
+    // 3. Screen shake and critical invert flash
     if (inCombatActive) {
       const hpChanged = (currentHp !== prevPlayerHpRef.current && prevPlayerHpRef.current !== 0) ||
                         (currentEnemyHp !== prevEnemyHpRef.current && prevEnemyHpRef.current !== 0)
@@ -752,7 +779,36 @@ function App() {
     prevPlayerHpRef.current = currentHp
     prevEnemyHpRef.current = currentEnemyHp
     prevCombatActiveRef.current = inCombatActive
+    prevVictoryRewardsRef.current = currentVictoryRewards
   }, [gameState])
+
+  // Global tactile UI sound effect hooks
+  useEffect(() => {
+    let lastHovered: HTMLElement | null = null
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (target.tagName === 'BUTTON' || target.closest('button') || target.classList.contains('cursor-pointer') || target.closest('.cursor-pointer')) {
+        SoundManager.playUI('click')
+      }
+    }
+    
+    const handleGlobalMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const clickable = target.tagName === 'BUTTON' || target.closest('button') || target.classList.contains('cursor-pointer') || target.closest('.cursor-pointer')
+      if (clickable && target !== lastHovered) {
+        SoundManager.playUI('hover')
+        lastHovered = target
+      }
+    }
+
+    window.addEventListener('click', handleGlobalClick)
+    window.addEventListener('mouseover', handleGlobalMouseOver)
+    return () => {
+      window.removeEventListener('click', handleGlobalClick)
+      window.removeEventListener('mouseover', handleGlobalMouseOver)
+      SoundManager.stopBGM()
+    }
+  }, [])
 
   // Region theme detectors
   const currentRegion = currentLocDetails?.region || "Shibuya"
