@@ -16,6 +16,7 @@ interface DialogueBoxProps {
 let audioCtx: AudioContext | null = null;
 
 const playTick = (type: 'aizen' | 'gojo' | 'shunsui' | 'narrator') => {
+  if (localStorage.getItem('sfx_enabled') === 'false') return;
   try {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();

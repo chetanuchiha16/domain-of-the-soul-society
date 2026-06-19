@@ -9,6 +9,7 @@ export interface FrameAnimationPlayerProps {
 let animAudioCtx: AudioContext | null = null;
 
 const playAnimSound = (type: string) => {
+  if (localStorage.getItem('sfx_enabled') === 'false') return;
   try {
     if (!animAudioCtx) {
       animAudioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();

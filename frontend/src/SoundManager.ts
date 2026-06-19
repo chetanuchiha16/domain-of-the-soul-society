@@ -4,6 +4,14 @@ let bgmInterval: number | null = null;
 let currentTheme: 'map' | 'combat' | 'boss' | null = null;
 let stepCounter = 0;
 
+const isBGMEnabled = (): boolean => {
+  return localStorage.getItem('bgm_enabled') !== 'false';
+};
+
+const isSFXEnabled = (): boolean => {
+  return localStorage.getItem('sfx_enabled') !== 'false';
+};
+
 const getAudioContext = (): AudioContext => {
   if (!audioCtx) {
     audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -49,6 +57,10 @@ const playSynthNote = (
 export const SoundManager = {
   // Start dynamic background procedural track
   startBGM(theme: 'map' | 'combat' | 'boss') {
+    if (!isBGMEnabled()) {
+      this.stopBGM();
+      return;
+    }
     if (currentTheme === theme) return;
     this.stopBGM();
     currentTheme = theme;
@@ -161,6 +173,7 @@ export const SoundManager = {
 
   // Play general sound effects on demand
   playUI(type: 'click' | 'hover' | 'levelUp' | 'victory') {
+    if (!isSFXEnabled()) return;
     try {
       const ctx = getAudioContext();
       if (type === 'click') {

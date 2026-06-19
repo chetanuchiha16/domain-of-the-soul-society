@@ -240,6 +240,56 @@ function App() {
   const [combatShake, setCombatShake] = useState(false)
   const [chromaticEffect, setChromaticEffect] = useState(false)
   const [invertFlash, setInvertFlash] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [bgmEnabled, setBgmEnabled] = useState(() => {
+    return localStorage.getItem('bgm_enabled') !== 'false'
+  })
+  const [sfxEnabled, setSfxEnabled] = useState(() => {
+    return localStorage.getItem('sfx_enabled') !== 'false'
+  })
+  const [shakesEnabled, setShakesEnabled] = useState(() => {
+    return localStorage.getItem('shakes_enabled') !== 'false'
+  })
+  const [flashesEnabled, setFlashesEnabled] = useState(() => {
+    return localStorage.getItem('flashes_enabled') !== 'false'
+  })
+
+  const toggleBgmSetting = () => {
+    const nextVal = !bgmEnabled
+    setBgmEnabled(nextVal)
+    localStorage.setItem('bgm_enabled', String(nextVal))
+    if (!nextVal) {
+      SoundManager.stopBGM()
+    } else {
+      const inCombatActive = !!(gameState?.combat?.enemies && gameState.combat.enemies.length > 0)
+      if (inCombatActive) {
+        const activeEnemyName = gameState.combat.enemies[0]?.name || ''
+        const isBossFight = activeEnemyName.toLowerCase().includes('sukuna') || activeEnemyName.toLowerCase().includes('aizen')
+        if (isBossFight) SoundManager.startBGM('boss')
+        else SoundManager.startBGM('combat')
+      } else {
+        SoundManager.startBGM('map')
+      }
+    }
+  }
+
+  const toggleSfxSetting = () => {
+    const nextVal = !sfxEnabled
+    setSfxEnabled(nextVal)
+    localStorage.setItem('sfx_enabled', String(nextVal))
+  }
+
+  const toggleShakesSetting = () => {
+    const nextVal = !shakesEnabled
+    setShakesEnabled(nextVal)
+    localStorage.setItem('shakes_enabled', String(nextVal))
+  }
+
+  const toggleFlashesSetting = () => {
+    const nextVal = !flashesEnabled
+    setFlashesEnabled(nextVal)
+    localStorage.setItem('flashes_enabled', String(nextVal))
+  }
 
   const triggerLocationDialogue = (dest: string, enemyName?: string) => {
     const desc = mapData[dest]?.description || `You have traveled to ${dest}.`;
@@ -699,7 +749,6 @@ function App() {
   
   const isSukuna = !!(activeEnemy && activeEnemy.name.toLowerCase().includes("sukuna"))
   const isAizen = !!(activeEnemy && activeEnemy.name.toLowerCase().includes("aizen"))
-  const isBoss = isSukuna || isAizen
 
   useEffect(() => {
     if (!inCombat) {
@@ -716,7 +765,7 @@ function App() {
   useEffect(() => {
     if (!gameState) return
 
-    const inCombatActive = !!(gameState.combat && gameState.combat.active && gameState.combat.enemies && gameState.combat.enemies.length > 0)
+    const inCombatActive = !!(gameState.combat && gameState.combat.enemies && gameState.combat.enemies.length > 0)
     const currentHp = gameState.player?.hp || 0
     const maxHp = gameState.player?.max_hp || 100
     const currentEnemyHp = inCombatActive ? gameState.combat.enemies[0].hp : 0
@@ -751,8 +800,10 @@ function App() {
                         (currentEnemyHp !== prevEnemyHpRef.current && prevEnemyHpRef.current !== 0)
 
       if (hpChanged) {
-        setCombatShake(true)
-        setTimeout(() => setCombatShake(false), 400)
+        if (localStorage.getItem('shakes_enabled') !== 'false') {
+          setCombatShake(true)
+          setTimeout(() => setCombatShake(false), 400)
+        }
 
         // Parse log for critical hit or heavy strike
         const logs = gameState.combat.log || []
@@ -761,8 +812,10 @@ function App() {
         const combined = (latestLog + ' ' + secondLatestLog).toLowerCase()
 
         if (combined.includes('critical') || combined.includes('black flash') || combined.includes('heavy strike') || combined.includes('cleave') || combined.includes('dismantle')) {
-          setInvertFlash(true)
-          setTimeout(() => setInvertFlash(false), 350)
+          if (localStorage.getItem('flashes_enabled') !== 'false') {
+            setInvertFlash(true)
+            setTimeout(() => setInvertFlash(false), 350)
+          }
         }
       }
 
@@ -852,6 +905,138 @@ function App() {
 
       <div className="max-w-[1200px] w-full mx-auto p-5 box-border relative z-10">
         
+        {/* Settings button */}
+        <div className="absolute top-5 right-5 z-20">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="flex items-center gap-1.5 bg-black/40 hover:bg-black/60 text-gray-400 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg cursor-pointer transition-all duration-150 text-[10px] font-black uppercase tracking-widest"
+          >
+            ⚙️ Settings
+          </button>
+        </div>
+
+        {/* Settings Modal Overlay */}
+        {settingsOpen && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+            <div className="bg-[#0b0c10] border-2 border-neon-cyan/30 rounded-xl p-6 max-w-md w-full shadow-[0_0_50px_rgba(102,252,241,0.2)] animate-fade-in relative">
+              <button 
+                onClick={() => setSettingsOpen(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-white cursor-pointer text-lg font-mono"
+              >
+                ✕
+              </button>
+              
+              <h2 className="text-sm font-black uppercase text-neon-cyan tracking-widest mb-6 border-b border-white/10 pb-3 flex items-center gap-2">
+                ⚙️ System Settings
+              </h2>
+
+              <div className="flex flex-col gap-5">
+                {/* Audio Controls */}
+                <div className="flex flex-col gap-2.5">
+                  <span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">Audio Channels</span>
+                  
+                  <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
+                    <span className="text-[11px] font-medium text-gray-250">Synthesized BGM</span>
+                    <button
+                      onClick={toggleBgmSetting}
+                      className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded cursor-pointer transition-all duration-150 ${
+                        bgmEnabled 
+                          ? 'bg-neon-cyan text-black hover:bg-neon-cyan/80' 
+                          : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                      }`}
+                    >
+                      {bgmEnabled ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
+                    <span className="text-[11px] font-medium text-gray-250">Retro UI Sound Effects (SFX)</span>
+                    <button
+                      onClick={toggleSfxSetting}
+                      className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded cursor-pointer transition-all duration-150 ${
+                        sfxEnabled 
+                          ? 'bg-neon-cyan text-black hover:bg-neon-cyan/80' 
+                          : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                      }`}
+                    >
+                      {sfxEnabled ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Visual Settings */}
+                <div className="flex flex-col gap-2.5">
+                  <span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">Visual FX Settings</span>
+                  
+                  <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
+                    <span className="text-[11px] font-medium text-gray-250">Violent Screen Shake</span>
+                    <button
+                      onClick={toggleShakesSetting}
+                      className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded cursor-pointer transition-all duration-150 ${
+                        shakesEnabled 
+                          ? 'bg-neon-cyan text-black hover:bg-neon-cyan/80' 
+                          : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                      }`}
+                    >
+                      {shakesEnabled ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between bg-white/5 p-3 rounded-lg border border-white/10">
+                    <span className="text-[11px] font-medium text-gray-250">Critical Screen-Invert Flashes</span>
+                    <button
+                      onClick={toggleFlashesSetting}
+                      className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded cursor-pointer transition-all duration-150 ${
+                        flashesEnabled 
+                          ? 'bg-neon-cyan text-black hover:bg-neon-cyan/80' 
+                          : 'bg-white/10 text-gray-400 hover:bg-white/20'
+                      }`}
+                    >
+                      {flashesEnabled ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Save and load backups */}
+                <div className="flex flex-col gap-2.5 mt-2 border-t border-white/10 pt-4">
+                  <span className="text-[10px] font-bold uppercase text-gray-500 tracking-wider">Game State Management</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => {
+                        saveGame()
+                        setSettingsOpen(false)
+                      }}
+                      className="bg-zinc-900 hover:bg-zinc-800 text-white rounded py-2 text-[9px] font-black uppercase tracking-widest cursor-pointer border border-white/10"
+                    >
+                      💾 Save Game
+                    </button>
+                    <button 
+                      onClick={() => {
+                        loadGame()
+                        setSettingsOpen(false)
+                      }}
+                      className="bg-zinc-900 hover:bg-zinc-800 text-white rounded py-2 text-[9px] font-black uppercase tracking-widest cursor-pointer border border-white/10"
+                    >
+                      📂 Load Game
+                    </button>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      if (confirm("Are you sure you want to reset your character data and start over?")) {
+                        resetPlayer()
+                        setSettingsOpen(false)
+                      }
+                    }}
+                    className="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-500/20 rounded py-2 text-[9px] font-black uppercase tracking-widest cursor-pointer mt-1"
+                  >
+                    💀 Full Reset Progress
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Dynamic header style based on active zone */}
         <header className={`mb-7 text-center border-b-2 pb-5 transition-all duration-500 ${
           isShibuya 
