@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { DialogueBox, DialogueLine } from './DialogueBox'
 import { FrameAnimationPlayer } from './FrameAnimationPlayer'
 import { SoundManager } from './SoundManager'
+import { CinematicIntro } from './CinematicIntro'
 
 const API_BASE = 'http://localhost:8000/api'
 
@@ -240,6 +241,9 @@ function App() {
   const [combatShake, setCombatShake] = useState(false)
   const [chromaticEffect, setChromaticEffect] = useState(false)
   const [invertFlash, setInvertFlash] = useState(false)
+  const [introActive, setIntroActive] = useState(() => {
+    return localStorage.getItem('intro_completed') !== 'true'
+  })
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [bgmEnabled, setBgmEnabled] = useState(() => {
     return localStorage.getItem('bgm_enabled') !== 'false'
@@ -709,6 +713,17 @@ function App() {
     )
   }
 
+  if (introActive) {
+    return (
+      <CinematicIntro 
+        onComplete={() => {
+          setIntroActive(false)
+          localStorage.setItem('intro_completed', 'true')
+        }} 
+      />
+    )
+  }
+
   if (error && !gameState) {
     return (
       <div className="max-w-[600px] mx-auto mt-24 p-8 text-center bg-bg-panel/45 backdrop-blur-md border border-red-500/20 rounded-xl shadow-2xl">
@@ -764,6 +779,11 @@ function App() {
 
   useEffect(() => {
     if (!gameState) return
+
+    if (introActive) {
+      SoundManager.stopBGM()
+      return
+    }
 
     const inCombatActive = !!(gameState.combat && gameState.combat.enemies && gameState.combat.enemies.length > 0)
     const currentHp = gameState.player?.hp || 0
@@ -833,7 +853,7 @@ function App() {
     prevEnemyHpRef.current = currentEnemyHp
     prevCombatActiveRef.current = inCombatActive
     prevVictoryRewardsRef.current = currentVictoryRewards
-  }, [gameState])
+  }, [gameState, introActive])
 
   // Global tactile UI sound effect hooks
   useEffect(() => {
@@ -1020,6 +1040,15 @@ function App() {
                       📂 Load Game
                     </button>
                   </div>
+                  <button 
+                    onClick={() => {
+                      setIntroActive(true)
+                      setSettingsOpen(false)
+                    }}
+                    className="bg-zinc-800 hover:bg-zinc-700 text-neon-cyan border border-neon-cyan/20 rounded py-2 text-[9px] font-black uppercase tracking-widest cursor-pointer mt-1"
+                  >
+                    🎬 Replay Cinematic Intro
+                  </button>
                   <button 
                     onClick={() => {
                       if (confirm("Are you sure you want to reset your character data and start over?")) {

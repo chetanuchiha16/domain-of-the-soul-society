@@ -202,5 +202,52 @@ export const SoundManager = {
     } catch (e) {
       console.warn("SoundManager playUI failed:", e);
     }
+  },
+
+  // Play scene-synchronized cinematic sounds
+  playCinematicSweep(scene: number) {
+    if (!isSFXEnabled()) return;
+    try {
+      const ctx = getAudioContext();
+      if (scene === 0) {
+        // Deep ambient sub-bass drone
+        playSynthNote(80.00, 'sine', 0.03, 3.5, 0.8, 1.0);
+      } else if (scene === 1) {
+        // Tension rising pitch sweep (Sukuna presence)
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(60, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(180, ctx.currentTime + 3.0);
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.015, ctx.currentTime + 0.5);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 3.0);
+        osc.start();
+        osc.stop(ctx.currentTime + 3.0);
+      } else if (scene === 2) {
+        // Low pitch threat drone (Aizen conspiracy)
+        playSynthNote(50.00, 'triangle', 0.03, 3.0, 0.5, 0.5);
+        playSynthNote(75.00, 'triangle', 0.02, 3.0, 0.5, 0.5);
+      } else if (scene === 3) {
+        // Beautiful light bell chime (Seireitei hope)
+        const now = ctx.currentTime;
+        const notes = [440.00, 554.37, 659.25];
+        notes.forEach((freq, idx) => {
+          setTimeout(() => {
+            playSynthNote(freq, 'sine', 0.015, 2.0, 0.2, 0.5);
+          }, idx * 200);
+        });
+      } else if (scene === 4) {
+        // Massive, crashing explosion drop (Title drop!)
+        const roots = [110.00, 138.61, 164.81, 220.00]; // A major chord
+        roots.forEach((freq) => {
+          playSynthNote(freq, 'sawtooth', 0.025, 2.5, 0.05, 0.5);
+        });
+      }
+    } catch (e) {
+      console.warn("Cinematic sound failed:", e);
+    }
   }
 };
