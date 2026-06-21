@@ -704,59 +704,12 @@ function App() {
     }
   }
 
-  if (loading && !gameState) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[80vh]">
-        <div className="text-neon-cyan font-mono text-xl tracking-widest mb-5 animate-pulse">Syncing Soul Energy...</div>
-        <div className="w-12 h-12 border-4 border-neon-cyan/20 border-t-neon-cyan rounded-full animate-spin"></div>
-      </div>
-    )
-  }
-
-  if (introActive) {
-    return (
-      <CinematicIntro 
-        onComplete={() => {
-          setIntroActive(false)
-          localStorage.setItem('intro_completed', 'true')
-        }} 
-      />
-    )
-  }
-
-  if (error && !gameState) {
-    return (
-      <div className="max-w-[600px] mx-auto mt-24 p-8 text-center bg-bg-panel/45 backdrop-blur-md border border-red-500/20 rounded-xl shadow-2xl">
-        <h2 className="text-2xl font-bold text-red-500 mb-4">Server Connection Offline</h2>
-        <p className="text-gray-400 mb-6 leading-relaxed">{error}</p>
-        <div className="bg-black/30 p-4 rounded-lg font-mono text-sm text-left mb-6 text-gray-300 border border-white/5">
-          # Start the backend server:<br/>
-          cd /home/chetan/Documents/Hinaverse/domain-of-the-soul-society<br/>
-          /home/chetan/Documents/Hinaverse/.venv/bin/uvicorn app:app --reload
-        </div>
-        <button 
-          className="bg-gradient-to-br from-neon-magenta to-neon-purple text-white border-0 rounded-lg py-3 px-6 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)] transition-all duration-200" 
-          onClick={fetchState}
-        >
-          Retry Connection
-        </button>
-      </div>
-    )
-  }
-
-  if (!gameState || !gameState.player) return null
-
-  const { player, combat } = gameState
-  const hpPct = (player.hp / player.max_hp) * 100
-  const energyPct = (player.energy / player.max_energy) * 100
-  const xpPct = (player.xp / (player.level * 100)) * 100
-
-  // Calculate current location details
-  const currentLocDetails = mapData[player.current_location]
-  const inCombat = combat.enemies && combat.enemies.length > 0
-  const activeEnemy = inCombat ? combat.enemies[0] : null
-  const activeSummon = inCombat ? (combat as any).active_summon : null
-  const enemyHpPct = activeEnemy ? (activeEnemy.hp / activeEnemy.max_hp) * 100 : 0
+  // ----------------------------------------------------
+  // Hooks & Refs (Must be declared unconditionally)
+  // ----------------------------------------------------
+  const inCombat = !!(gameState?.combat?.enemies && gameState.combat.enemies.length > 0)
+  const activeEnemy = inCombat ? gameState?.combat?.enemies?.[0] : null
+  const activeSummon = inCombat ? (gameState?.combat as any)?.active_summon : null
   const victoryRewards = gameState?.victory_rewards
   
   const isPlayerTargeted = !!(activeEnemy && (activeEnemy as any).next_intent && (activeEnemy as any).next_intent !== 'HEAL' && (activeEnemy as any).target !== 'summon')
@@ -883,7 +836,62 @@ function App() {
     }
   }, [])
 
-  // Region theme detectors
+  // ----------------------------------------------------
+  // Early Returns & Conditional UI Render Views
+  // ----------------------------------------------------
+  if (loading && !gameState) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        <div className="text-neon-cyan font-mono text-xl tracking-widest mb-5 animate-pulse">Syncing Soul Energy...</div>
+        <div className="w-12 h-12 border-4 border-neon-cyan/20 border-t-neon-cyan rounded-full animate-spin"></div>
+      </div>
+    )
+  }
+
+  if (introActive) {
+    return (
+      <CinematicIntro 
+        onComplete={() => {
+          setIntroActive(false)
+          localStorage.setItem('intro_completed', 'true')
+        }} 
+      />
+    )
+  }
+
+  if (error && !gameState) {
+    return (
+      <div className="max-w-[600px] mx-auto mt-24 p-8 text-center bg-bg-panel/45 backdrop-blur-md border border-red-500/20 rounded-xl shadow-2xl">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">Server Connection Offline</h2>
+        <p className="text-gray-400 mb-6 leading-relaxed">{error}</p>
+        <div className="bg-black/30 p-4 rounded-lg font-mono text-sm text-left mb-6 text-gray-300 border border-white/5">
+          # Start the backend server:<br/>
+          cd /home/chetan/Documents/Hinaverse/domain-of-the-soul-society<br/>
+          /home/chetan/Documents/Hinaverse/.venv/bin/uvicorn app:app --reload
+        </div>
+        <button 
+          className="bg-gradient-to-br from-neon-magenta to-neon-purple text-white border-0 rounded-lg py-3 px-6 font-bold uppercase tracking-wider cursor-pointer shadow-[0_4px_15px_rgba(255,0,127,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(255,0,127,0.5)] transition-all duration-200" 
+          onClick={fetchState}
+        >
+          Retry Connection
+        </button>
+      </div>
+    )
+  }
+
+  if (!gameState || !gameState.player) return null
+
+  // ----------------------------------------------------
+  // Main Viewport Derivations
+  // ----------------------------------------------------
+  const { player, combat } = gameState
+  const hpPct = (player.hp / player.max_hp) * 100
+  const energyPct = (player.energy / player.max_energy) * 100
+  const xpPct = (player.xp / (player.level * 100)) * 100
+
+  // Calculate current location details
+  const currentLocDetails = mapData[player.current_location]
+  const enemyHpPct = activeEnemy ? (activeEnemy.hp / activeEnemy.max_hp) * 100 : 0
   const currentRegion = currentLocDetails?.region || "Shibuya"
   const isShibuya = currentRegion.toLowerCase() === 'shibuya'
   const isSeireitei = currentRegion.toLowerCase() === 'soul society'
