@@ -540,9 +540,10 @@ def handle_enemy_defeat(p, enemy, log):
     if p.xp >= p.level * 100:
         p.xp -= p.level * 100
         p.level += 1
-        p.max_hp += 20
+        p.max_hp += 25
+        p._attack_power += 5
         p.hp = p.max_hp
-        log.append(f"LEVEL UP! Reached level {p.level}!")
+        log.append(f"🎉 LEVEL UP! Reached level {p.level}! Max HP is now {p.max_hp}, and Base Attack increased by 5!")
         
     state.current_enemies = []
 
@@ -569,13 +570,19 @@ def combat_attack():
         
     if not player_frozen:
         is_weakened = any(eff.get("name") == "Weakened" for eff in p.status_effects)
+        is_crit = random.random() < 0.15
         p_dmg = p.attack_power
+        if is_crit:
+            p_dmg = int(p_dmg * 2.0)
         if is_weakened:
             p_dmg = int(p_dmg * 0.7)
             log.append(f"🩸 {p.name} is Weakened! Attack power reduced.")
         
         enemy.hp -= p_dmg
-        log.append(f"{p.name} slashed {enemy.name} for {p_dmg} damage!")
+        if is_crit:
+            log.append(f"✨ BLACK FLASH! {p.name} struck {enemy.name} for {p_dmg} critical damage!")
+        else:
+            log.append(f"{p.name} slashed {enemy.name} for {p_dmg} damage!")
     else:
         log.append(f"⏳ {p.name} skipped turn due to status effects.")
     
